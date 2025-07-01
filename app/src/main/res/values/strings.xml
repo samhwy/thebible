@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">聖經</string>
+    <string name="chinese_english">中英對照</string>
+    <string name="search_hint">神*主耶穌</string>
+    <string name="search">查找</string>
+    <string name="prev_chapter">上一章</string>
+    <string name="next_chapter">下一章</string>
+    <string name="chapter_prefix">第</string>
+    <string name="chapter_suffix">章</string>
+</resources>
