@@ -11,9 +11,17 @@ import com.sam.thebible.databinding.ItemVerseBinding
 class VerseAdapter : ListAdapter<Verse, VerseAdapter.VerseViewHolder>(VerseDiffCallback()) {
     
     private var showEnglish = true
+    private var fontSize = 16f
+    private var textColor = android.graphics.Color.BLACK
 
     fun setShowEnglish(show: Boolean) {
         showEnglish = show
+        notifyDataSetChanged()
+    }
+    
+    fun updateTextSettings(size: Float, color: Int) {
+        fontSize = size
+        textColor = color
         notifyDataSetChanged()
     }
 
@@ -26,13 +34,20 @@ class VerseAdapter : ListAdapter<Verse, VerseAdapter.VerseViewHolder>(VerseDiffC
         holder.bind(getItem(position), showEnglish)
     }
 
-    class VerseViewHolder(private val binding: ItemVerseBinding) : RecyclerView.ViewHolder(binding.root) {
+    inner class VerseViewHolder(private val binding: ItemVerseBinding) : RecyclerView.ViewHolder(binding.root) {
         fun bind(verse: Verse, showEnglish: Boolean) {
             binding.tvVerseNumber.text = verse.verse.toString()
             binding.tvChineseContent.text = verse.chineseContent
             
+            binding.tvVerseNumber.textSize = fontSize
+            binding.tvChineseContent.textSize = fontSize
+            binding.tvVerseNumber.setTextColor(textColor)
+            binding.tvChineseContent.setTextColor(textColor)
+            
             if (showEnglish && verse.englishContent.isNotEmpty()) {
                 binding.tvEnglishContent.text = verse.englishContent
+                binding.tvEnglishContent.textSize = fontSize
+                binding.tvEnglishContent.setTextColor(textColor)
                 binding.tvEnglishContent.visibility = android.view.View.VISIBLE
             } else {
                 binding.tvEnglishContent.visibility = android.view.View.GONE

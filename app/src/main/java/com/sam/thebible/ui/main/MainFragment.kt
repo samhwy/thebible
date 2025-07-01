@@ -1,5 +1,6 @@
 package com.sam.thebible.ui.main
 
+import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
 import android.view.View
@@ -8,9 +9,12 @@ import android.widget.ArrayAdapter
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.sam.thebible.MainActivity
+import com.sam.thebible.R
 import com.sam.thebible.adapter.VerseAdapter
 import com.sam.thebible.databinding.FragmentMainBinding
 import com.sam.thebible.data.model.Book
+import com.sam.thebible.utils.SettingsManager
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
@@ -21,6 +25,10 @@ class MainFragment : Fragment() {
     
     private val viewModel: MainViewModel by viewModels()
     private lateinit var verseAdapter: VerseAdapter
+    private lateinit var settingsManager: SettingsManager
+    private var currentFontSize = 16f
+    private var currentFontColor = Color.BLACK
+    private var currentBackgroundColor = Color.WHITE
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -34,9 +42,54 @@ class MainFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
         
+        settingsManager = SettingsManager(requireContext())
         setupRecyclerView()
         setupObservers()
-        setupClickListeners()
+        setupToolbarSpinners()
+        loadSettings()
+    }
+    
+    private fun loadSettings() {
+        currentFontSize = 12f + settingsManager.fontSize * 2f
+        
+        val fontColors = arrayOf(Color.WHITE, Color.BLACK, Color.GREEN, Color.YELLOW, 0xFFFFA500.toInt())
+        currentFontColor = fontColors.getOrElse(settingsManager.fontColorIndex) { Color.BLACK }
+        
+        val backgroundColors = if (settingsManager.isDarkMode) {
+            arrayOf(Color.BLACK, 0xFF2D2D2D.toInt(), 0xFF1A1A1A.toInt())
+        } else {
+            arrayOf(Color.WHITE, Color.BLACK, 0xFFF5F5DC.toInt())
+        }
+        currentBackgroundColor = backgroundColors.getOrElse(settingsManager.backgroundColorIndex) { 
+            if (settingsManager.isDarkMode) Color.BLACK else Color.WHITE 
+        }
+        
+        if (settingsManager.showEnglish != (viewModel.showEnglish.value ?: true)) {
+            viewModel.toggleEnglish()
+        }
+        
+        applyTextSettings()
+    }
+
+    private fun setupToolbarSpinners() {
+        val mainActivity = activity as? MainActivity
+        val (bookSpinner, chapterSpinner) = mainActivity?.getToolbarSpinners() ?: return
+        
+        bookSpinner?.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                viewModel.books.value?.get(position)?.let { book ->
+                    viewModel.selectBook(book)
+                }
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        })
+        
+        chapterSpinner?.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                viewModel.selectChapter(position + 1)
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        })
     }
 
     private fun setupRecyclerView() {
@@ -54,55 +107,117 @@ class MainFragment : Fragment() {
         
         viewModel.currentBook.observe(viewLifecycleOwner) { book ->
             book?.let {
-                binding.spinnerBooks.setSelection(getBookPosition(it))
+                settingsManager.lastBookCode = it.code
+                val mainActivity = activity as? MainActivity
+                val (bookSpinner, _) = mainActivity?.getToolbarSpinners() ?: return@let
+                bookSpinner?.setSelection(getBookPosition(it))
+                setupChapterSpinner(it)
             }
         }
         
         viewModel.currentChapter.observe(viewLifecycleOwner) { chapter ->
-            binding.tvCurrentChapter.text = chapter.toString()
+            settingsManager.lastChapter = chapter
+            val mainActivity = activity as? MainActivity
+            val (_, chapterSpinner) = mainActivity?.getToolbarSpinners() ?: return@observe
+            if (chapterSpinner?.adapter != null && chapter > 0) {
+                chapterSpinner.setSelection(chapter - 1)
+            }
         }
         
         viewModel.verses.observe(viewLifecycleOwner) { verses ->
             verseAdapter.submitList(verses)
+            applyTextSettings()
         }
         
         viewModel.showEnglish.observe(viewLifecycleOwner) { showEnglish ->
-            binding.cbShowEnglish.isChecked = showEnglish
             verseAdapter.setShowEnglish(showEnglish)
         }
     }
 
-    private fun setupClickListeners() {
-        binding.btnPrevChapter.setOnClickListener {
-            viewModel.prevChapter()
-        }
+
+
+    private fun setupBookSpinner(books: List<Book>) {
+        val mainActivity = activity as? MainActivity
+        val (bookSpinner, _) = mainActivity?.getToolbarSpinners() ?: return
         
-        binding.btnNextChapter.setOnClickListener {
-            viewModel.nextChapter()
-        }
+        val bookNames = books.map { it.tcName ?: it.engName ?: it.code }
+        val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item_custom, bookNames)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        bookSpinner?.adapter = adapter
         
-        binding.btnSearch.setOnClickListener {
-            val keyword = binding.etSearch.text.toString()
-            viewModel.search(keyword)
-        }
-        
-        binding.cbShowEnglish.setOnCheckedChangeListener { _, _ ->
-            viewModel.toggleEnglish()
+        // Load last book if available
+        val lastBookCode = settingsManager.lastBookCode
+        if (lastBookCode.isNotEmpty()) {
+            val lastBook = books.find { it.code == lastBookCode }
+            lastBook?.let {
+                val position = books.indexOf(it)
+                bookSpinner?.setSelection(position)
+                viewModel.selectBook(it)
+            }
         }
     }
 
-    private fun setupBookSpinner(books: List<Book>) {
-        val bookNames = books.map { "${it.tcName} (${it.engName})" }
-        val adapter = ArrayAdapter(requireContext(), android.R.layout.simple_spinner_item, bookNames)
-        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-        binding.spinnerBooks.adapter = adapter
+    private fun setupChapterSpinner(book: Book) {
+        val mainActivity = activity as? MainActivity
+        val (_, chapterSpinner) = mainActivity?.getToolbarSpinners() ?: return
         
-        binding.spinnerBooks.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                viewModel.selectBook(books[position])
+        val chapterCount = book.numChapter ?: 1
+        val chapters = (1..chapterCount).map { "$it 章" }
+        val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item_custom, chapters)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        chapterSpinner?.adapter = adapter
+        
+        // Load last chapter if same book
+        if (book.code == settingsManager.lastBookCode) {
+            val lastChapter = settingsManager.lastChapter
+            if (lastChapter in 1..chapterCount) {
+                chapterSpinner?.setSelection(lastChapter - 1)
+                viewModel.selectChapter(lastChapter)
             }
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
-        })
+        }
+    }
+
+    fun onPrevChapter() {
+        viewModel.prevChapter()
+    }
+    
+    fun onNextChapter() {
+        viewModel.nextChapter()
+    }
+    
+    fun onSearch(keyword: String) {
+        viewModel.search(keyword)
+    }
+    
+    fun getShowEnglish(): Boolean {
+        return settingsManager.showEnglish
+    }
+    
+    fun applySettings(showEnglish: Boolean, fontSize: Int, fontColorIndex: Int, backgroundColorIndex: Int, isDarkMode: Boolean) {
+        if (showEnglish != (viewModel.showEnglish.value ?: true)) {
+            viewModel.toggleEnglish()
+        }
+        
+        currentFontSize = 12f + fontSize * 2f
+        
+        val fontColors = arrayOf(Color.WHITE, Color.BLACK, Color.GREEN, Color.YELLOW, 0xFFFFA500.toInt())
+        currentFontColor = fontColors.getOrElse(fontColorIndex) { Color.BLACK }
+        
+        val backgroundColors = if (isDarkMode) {
+            arrayOf(Color.BLACK, 0xFF2D2D2D.toInt(), 0xFF1A1A1A.toInt())
+        } else {
+            arrayOf(Color.WHITE, Color.BLACK, 0xFFF5F5DC.toInt())
+        }
+        currentBackgroundColor = backgroundColors.getOrElse(backgroundColorIndex) { 
+            if (isDarkMode) Color.BLACK else Color.WHITE 
+        }
+        
+        applyTextSettings()
+    }
+    
+    private fun applyTextSettings() {
+        binding.rvContent.setBackgroundColor(currentBackgroundColor)
+        verseAdapter.updateTextSettings(currentFontSize, currentFontColor)
     }
 
     private fun getBookPosition(book: Book): Int {

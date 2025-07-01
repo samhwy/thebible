@@ -7,4 +7,19 @@
     <string name="next_chapter">下一章</string>
     <string name="chapter_prefix">第</string>
     <string name="chapter_suffix">章</string>
+    <string name="settings">設定</string>
+    <string name="font_size">字體大小</string>
+    <string name="font_color">字體顏色</string>
+    <string name="background_color">背景顏色</string>
+    <string name="cancel">取消</string>
+    <string name="ok">確定</string>
+    <string name="black">黑色</string>
+    <string name="white">白色</string>
+    <string name="blue">藍色</string>
+    <string name="green">綠色</string>
+    <string name="red">紅色</string>
+    <string name="yellow">黃色</string>
+    <string name="orange">橙色</string>
+    <string name="parchment">羊皮紙</string>
+    <string name="dark_mode">深色模式</string>
 </resources>
