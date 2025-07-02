@@ -34,6 +34,28 @@ class BibleRepository @Inject constructor(
     }
     
     suspend fun searchKeyword(keyword: String): List<SearchResult> {
-        return searchDao.searchChinese(keyword)
+        val chineseResults = searchDao.searchChinese(keyword).take(50)
+        val englishResults = searchDao.searchEnglish(keyword).take(50)
+        
+        val combinedResults = mutableListOf<SearchResult>()
+        combinedResults.addAll(chineseResults.map { it.copy(type = "chinese") })
+        combinedResults.addAll(englishResults.map { it.copy(type = "english") })
+        
+        val sortedResults = combinedResults.sortedWith(
+            compareBy<SearchResult> { it.book }
+                .thenBy { it.chapter }
+                .thenBy { it.verse }
+        ).take(100)
+        
+        return if (chineseResults.size + englishResults.size >= 100) {
+            sortedResults + SearchResult(
+                book = "",
+                bookName = "系統訊息",
+                chapter = 0,
+                verse = 0,
+                content = "搜尋結果過多，僅顯示前100筆",
+                type = "message"
+            )
+        } else sortedResults
     }
 }

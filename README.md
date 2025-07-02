@@ -22,35 +22,18 @@ An Android Bible reading app with Chinese and English text support.
 
 1. Place your `bible.db` SQLite database file in `app/src/main/assets/`
 2. The database should contain:
-   - `books` table: book information (code, numChapter, engName, tcName)
-   - `hb5` table: Chinese verses (rowid, book, chapter, verse, content)
-   - `kjv` table: English verses (rowid, book, chapter, verse, content)
+   - `books` table: book information (code, numChapter, engName, tcName) with composite primary key
+   - `hb5` table: Chinese verses (book, chapter, verse, content) with composite primary key
+   - `kjv` table: English verses (book, chapter, verse, content) with composite primary key
 
 ## Database Schema
 
 ```sql
-CREATE TABLE books (
-    code TEXT PRIMARY KEY,
-    numChapter INTEGER,
-    engName TEXT,
-    tcName TEXT
-);
+CREATE TABLE "books" ( `code` TEXT NOT NULL, `eng_name` TEXT, `tc_name` TEXT, `num_chapter` INTEGER, `seq` INTEGER, PRIMARY KEY(`code`) )
 
-CREATE TABLE hb5 (
-    rowid INTEGER PRIMARY KEY,
-    book TEXT,
-    chapter INTEGER,
-    verse INTEGER,
-    content TEXT
-);
+CREATE TABLE `hb5` ( `book` TEXT NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, `content` TEXT NOT NULL, PRIMARY KEY(`book`,`chapter`,`verse`) )
 
-CREATE TABLE kjv (
-    rowid INTEGER PRIMARY KEY,
-    book TEXT,
-    chapter INTEGER,
-    verse INTEGER,
-    content TEXT
-);
+CREATE TABLE `kjv` ( `book` TEXT NOT NULL, `chapter` INTEGER NOT NULL, `verse` INTEGER NOT NULL, `content` TEXT NOT NULL, PRIMARY KEY(`book`,`chapter`,`verse`) )
 ```
 
 ## Build Requirements
@@ -67,3 +50,12 @@ CREATE TABLE kjv (
 - Navigation Component
 - Material Design Components
 - AndroidX Lifecycle Components
+
+## Data Models
+
+The app uses the following data models defined in `BibleModels.kt`:
+- **Book**: Represents a Bible book with properties code, numChapter, engName, tcName, and seq
+- **ChineseVerse (hb5)**: Represents a Chinese Bible verse with book, chapter, verse, and content
+- **EnglishVerse (kjv)**: Represents an English Bible verse with book, chapter, verse, and content
+- **Verse**: Combines both Chinese and English verses for display
+- **SearchResult**: Represents a search result with book information and verse content

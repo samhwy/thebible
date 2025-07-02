@@ -2,7 +2,9 @@ package com.sam.thebible.ui.main
 
 import android.graphics.Color
 import android.os.Bundle
+import android.view.GestureDetector
 import android.view.LayoutInflater
+import android.view.MotionEvent
 import android.view.View
 import android.view.ViewGroup
 import android.widget.ArrayAdapter
@@ -11,11 +13,13 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.sam.thebible.MainActivity
 import com.sam.thebible.R
+import com.sam.thebible.adapter.SearchResultAdapter
 import com.sam.thebible.adapter.VerseAdapter
 import com.sam.thebible.databinding.FragmentMainBinding
 import com.sam.thebible.data.model.Book
 import com.sam.thebible.utils.SettingsManager
 import dagger.hilt.android.AndroidEntryPoint
+import kotlin.math.abs
 
 @AndroidEntryPoint
 class MainFragment : Fragment() {
@@ -25,7 +29,9 @@ class MainFragment : Fragment() {
     
     private val viewModel: MainViewModel by viewModels()
     private lateinit var verseAdapter: VerseAdapter
+    private lateinit var searchResultAdapter: SearchResultAdapter
     private lateinit var settingsManager: SettingsManager
+    private lateinit var gestureDetector: GestureDetector
     private var currentFontSize = 16f
     private var currentFontColor = Color.BLACK
     private var currentBackgroundColor = Color.WHITE
@@ -44,6 +50,7 @@ class MainFragment : Fragment() {
         
         settingsManager = SettingsManager(requireContext())
         setupRecyclerView()
+        setupGestureDetector()
         setupObservers()
         setupToolbarSpinners()
         loadSettings()
@@ -94,9 +101,43 @@ class MainFragment : Fragment() {
 
     private fun setupRecyclerView() {
         verseAdapter = VerseAdapter()
+        searchResultAdapter = SearchResultAdapter()
         binding.rvContent.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = verseAdapter
+        }
+    }
+    
+    private fun setupGestureDetector() {
+        gestureDetector = GestureDetector(requireContext(), object : GestureDetector.SimpleOnGestureListener() {
+            override fun onFling(
+                e1: MotionEvent?,
+                e2: MotionEvent,
+                velocityX: Float,
+                velocityY: Float
+            ): Boolean {
+                if (e1 == null) return false
+                
+                val diffX = e2.x - e1.x
+                val diffY = e2.y - e1.y
+                
+                if (abs(diffX) > abs(diffY) && abs(diffX) > 100 && abs(velocityX) > 100) {
+                    if (diffX > 0) {
+                        // Swipe right - previous chapter
+                        onPrevChapter()
+                    } else {
+                        // Swipe left - next chapter
+                        onNextChapter()
+                    }
+                    return true
+                }
+                return false
+            }
+        })
+        
+        binding.rvContent.setOnTouchListener { _, event ->
+            gestureDetector.onTouchEvent(event)
+            false
         }
     }
 
@@ -131,6 +172,19 @@ class MainFragment : Fragment() {
         
         viewModel.showEnglish.observe(viewLifecycleOwner) { showEnglish ->
             verseAdapter.setShowEnglish(showEnglish)
+        }
+        
+        viewModel.searchResults.observe(viewLifecycleOwner) { results ->
+            searchResultAdapter.submitList(results)
+            searchResultAdapter.updateTextSettings(currentFontSize, currentFontColor)
+        }
+        
+        viewModel.isSearchMode.observe(viewLifecycleOwner) { isSearchMode ->
+            if (isSearchMode) {
+                binding.rvContent.adapter = searchResultAdapter
+            } else {
+                binding.rvContent.adapter = verseAdapter
+            }
         }
     }
 
@@ -186,7 +240,17 @@ class MainFragment : Fragment() {
     }
     
     fun onSearch(keyword: String) {
+        searchResultAdapter.setSearchKeyword(keyword)
         viewModel.search(keyword)
+    }
+    
+    fun exitSearchMode(): Boolean {
+        return if (viewModel.isSearchMode.value == true) {
+            viewModel.exitSearchMode()
+            true
+        } else {
+            false
+        }
     }
     
     fun getShowEnglish(): Boolean {
@@ -218,6 +282,7 @@ class MainFragment : Fragment() {
     private fun applyTextSettings() {
         binding.rvContent.setBackgroundColor(currentBackgroundColor)
         verseAdapter.updateTextSettings(currentFontSize, currentFontColor)
+        searchResultAdapter.updateTextSettings(currentFontSize, currentFontColor)
     }
 
     private fun getBookPosition(book: Book): Int {

@@ -66,5 +66,6 @@ data class SearchResult(
     val bookName: String,
     val chapter: Int,
     val verse: Int,
-    val content: String
+    val content: String,
+    val type: String = "chinese"
 )

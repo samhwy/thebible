@@ -78,17 +78,38 @@ class MainViewModel @Inject constructor(
     fun nextChapter() {
         _currentBook.value?.let { book ->
             _currentChapter.value?.let { chapter ->
-                if (chapter < (book.numChapter?: 0)) {
+                if (chapter < (book.numChapter ?: 0)) {
                     selectChapter(chapter + 1)
+                } else {
+                    // Go to next book's first chapter
+                    _books.value?.let { books ->
+                        val currentIndex = books.indexOf(book)
+                        if (currentIndex < books.size - 1) {
+                            selectBook(books[currentIndex + 1])
+                        }
+                    }
                 }
             }
         }
     }
 
     fun prevChapter() {
-        _currentChapter.value?.let { chapter ->
-            if (chapter > 1) {
-                selectChapter(chapter - 1)
+        _currentBook.value?.let { book ->
+            _currentChapter.value?.let { chapter ->
+                if (chapter > 1) {
+                    selectChapter(chapter - 1)
+                } else {
+                    // Go to previous book's last chapter
+                    _books.value?.let { books ->
+                        val currentIndex = books.indexOf(book)
+                        if (currentIndex > 0) {
+                            val prevBook = books[currentIndex - 1]
+                            _currentBook.value = prevBook
+                            _currentChapter.value = prevBook.numChapter ?: 1
+                            loadChapter(prevBook.code, prevBook.numChapter ?: 1)
+                        }
+                    }
+                }
             }
         }
     }

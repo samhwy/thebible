@@ -8,6 +8,7 @@ import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.SeekBar
 import android.widget.Spinner
+import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
 import androidx.navigation.ui.AppBarConfiguration
@@ -49,6 +50,18 @@ class MainActivity : AppCompatActivity() {
             checkScreenSpace()
             setupToolbarControls()
         }
+        
+        // Setup back button handling
+        onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
+            override fun handleOnBackPressed() {
+                val fragment = getCurrentMainFragment()
+                if (fragment != null && fragment.exitSearchMode()) {
+                    // Search mode was exited, stay in app
+                } else {
+                    finish()
+                }
+            }
+        })
     }
 
     private fun setupToolbarControls() {
