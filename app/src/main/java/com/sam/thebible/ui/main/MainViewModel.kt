@@ -1,5 +1,6 @@
 package com.sam.thebible.ui.main
 
+import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.ViewModel
@@ -11,6 +12,7 @@ import com.sam.thebible.data.repository.BibleRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import javax.inject.Inject
+import kotlin.math.absoluteValue
 
 @HiltViewModel
 class MainViewModel @Inject constructor(
@@ -38,6 +40,9 @@ class MainViewModel @Inject constructor(
     private val _isSearchMode = MutableLiveData<Boolean>()
     val isSearchMode: LiveData<Boolean> = _isSearchMode
 
+    var lastBook: Book? = null
+    var lastChapter: Int = 1
+
     init {
         _showEnglish.value = true
         _isSearchMode.value = false
@@ -60,10 +65,19 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun selectBook(book: Book) {
+    fun selectBook(book: Book, chapter: Int = 1) {
+        Log.d("selectBook", "checkpoint curr book: $lastBook, chapter: $lastChapter")
+        // Thread.dumpStack()
         _currentBook.value = book
-        _currentChapter.value = 1
-        loadChapter(book.code, 1)
+        _currentChapter.value = chapter
+        if (lastBook!= book && lastChapter == 1) {  //check current book and chapter is the 1st chapter of last book
+            loadChapter(book.code, book.numChapter ?: 1)
+        }
+        else {
+            loadChapter(book.code, chapter)
+        }
+        lastBook = book
+        lastChapter = chapter
     }
 
     fun selectChapter(chapter: Int) {
@@ -148,5 +162,12 @@ class MainViewModel @Inject constructor(
 
     fun exitSearchMode() {
         _isSearchMode.value = false
+    }
+    
+    fun jumpToVerse(bookCode: String, chapter: Int) {
+        _books.value?.find { it.code == bookCode }?.let { book ->
+            selectBook(book, chapter)
+            _isSearchMode.value = false
+        }
     }
 }

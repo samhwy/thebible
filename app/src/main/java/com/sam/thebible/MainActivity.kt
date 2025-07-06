@@ -28,7 +28,7 @@ class MainActivity : AppCompatActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         settingsManager = SettingsManager(this)
         applyTheme()
-        
+
         super.onCreate(savedInstanceState)
 
         binding = ActivityMainBinding.inflate(layoutInflater)
@@ -44,13 +44,13 @@ class MainActivity : AppCompatActivity() {
         } ?: throw IllegalStateException("NavHostFragment not found or not set up correctly")
 
         appBarConfiguration = AppBarConfiguration(navController.graph)
-        
+
         // Setup toolbar controls after fragment is loaded
         navController.addOnDestinationChangedListener { _, _, _ ->
             checkScreenSpace()
             setupToolbarControls()
         }
-        
+
         // Setup back button handling
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -68,15 +68,15 @@ class MainActivity : AppCompatActivity() {
         binding.toolbar.findViewById<android.widget.ImageButton>(R.id.btnPrevChapter)?.setOnClickListener {
             getCurrentMainFragment()?.onPrevChapter()
         }
-        
+
         binding.toolbar.findViewById<android.widget.ImageButton>(R.id.btnNextChapter)?.setOnClickListener {
             getCurrentMainFragment()?.onNextChapter()
         }
-        
+
         binding.toolbar.findViewById<android.widget.ImageButton>(R.id.btnSearch)?.setOnClickListener {
             showSearchDialog()
         }
-        
+
         binding.toolbar.findViewById<android.widget.ImageButton>(R.id.btnSettings)?.setOnClickListener {
             showSettingsDialog()
         }
@@ -90,15 +90,15 @@ class MainActivity : AppCompatActivity() {
     private fun showSearchDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_search, null)
         val etSearchKeyword = dialogView.findViewById<EditText>(R.id.etSearchKeyword)
-        
+
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
             .create()
-        
+
         dialogView.findViewById<android.view.View>(R.id.btnSearchCancel).setOnClickListener {
             dialog.dismiss()
         }
-        
+
         dialogView.findViewById<android.view.View>(R.id.btnSearchOk).setOnClickListener {
             val keyword = etSearchKeyword.text.toString()
             if (keyword.isNotBlank()) {
@@ -106,7 +106,7 @@ class MainActivity : AppCompatActivity() {
             }
             dialog.dismiss()
         }
-        
+
         dialog.show()
     }
 
@@ -117,13 +117,13 @@ class MainActivity : AppCompatActivity() {
             AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
         }
     }
-    
+
     private fun applyToolbarTheme() {
         if (settingsManager.isDarkMode) {
             binding.toolbar.setBackgroundColor(0xFF424242.toInt())
         }
     }
-    
+
     private fun checkScreenSpace() {
         val displayMetrics = resources.displayMetrics
         val screenWidth = displayMetrics.widthPixels / displayMetrics.density
@@ -137,13 +137,13 @@ class MainActivity : AppCompatActivity() {
 
     private fun showSettingsDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_settings, null)
-        
+
         val cbDarkMode = dialogView.findViewById<CheckBox>(R.id.cbDarkMode)
         val cbChineseEnglish = dialogView.findViewById<CheckBox>(R.id.cbChineseEnglish)
         val seekBarFontSize = dialogView.findViewById<SeekBar>(R.id.seekBarFontSize)
         val spinnerFontColor = dialogView.findViewById<Spinner>(R.id.spinnerFontColor)
         val spinnerBackgroundColor = dialogView.findViewById<Spinner>(R.id.spinnerBackgroundColor)
-        
+
         // Font colors: white, black, green, yellow, orange
         val fontColors = arrayOf(Color.WHITE, Color.BLACK, Color.GREEN, Color.YELLOW, 0xFFFFA500.toInt())
         val fontColorNames = arrayOf(
@@ -153,63 +153,49 @@ class MainActivity : AppCompatActivity() {
             getString(R.string.yellow),
             getString(R.string.orange)
         )
-        
-        // Background colors: black, white, parchment
-        val backgroundColors = if (settingsManager.isDarkMode) {
-            arrayOf(Color.BLACK, 0xFF2D2D2D.toInt(), 0xFF1A1A1A.toInt())
-        } else {
-            arrayOf(Color.WHITE, Color.BLACK, 0xFFF5F5DC.toInt())
-        }
+
+        // Background colors: white, black, parchment, dark gray, very dark
+        val backgroundColors = arrayOf(Color.WHITE, Color.BLACK, 0xFFF5F5DC.toInt(), 0xFF2D2D2D.toInt(), 0xFF1A1A1A.toInt())
         val backgroundColorNames = arrayOf(
-            if (settingsManager.isDarkMode) getString(R.string.black) else getString(R.string.white),
-            if (settingsManager.isDarkMode) "深灰" else getString(R.string.black),
-            if (settingsManager.isDarkMode) "極深" else getString(R.string.parchment)
+            getString(R.string.white),
+            getString(R.string.black),
+            getString(R.string.parchment),
+            "深灰",
+            "極深"
         )
-        
+
         val fontColorAdapter = ColorSpinnerAdapter(this, fontColors, fontColorNames)
         val backgroundColorAdapter = ColorSpinnerAdapter(this, backgroundColors, backgroundColorNames)
-        
+
         spinnerFontColor.adapter = fontColorAdapter
         spinnerBackgroundColor.adapter = backgroundColorAdapter
-        
+
         // Set current values
         cbDarkMode.isChecked = settingsManager.isDarkMode
         cbChineseEnglish.isChecked = settingsManager.showEnglish
         seekBarFontSize.progress = settingsManager.fontSize
         spinnerFontColor.setSelection(settingsManager.fontColorIndex)
         spinnerBackgroundColor.setSelection(settingsManager.backgroundColorIndex)
-        
-        cbDarkMode.setOnCheckedChangeListener { _, isChecked ->
-            val newBackgroundColors = if (isChecked) {
-                arrayOf(Color.BLACK, 0xFF2D2D2D.toInt(), 0xFF1A1A1A.toInt())
-            } else {
-                arrayOf(Color.WHITE, Color.BLACK, 0xFFF5F5DC.toInt())
-            }
-            val newBackgroundColorNames = arrayOf(
-                if (isChecked) getString(R.string.black) else getString(R.string.white),
-                if (isChecked) "深灰" else getString(R.string.black),
-                if (isChecked) "極深" else getString(R.string.parchment)
-            )
-            spinnerBackgroundColor.adapter = ColorSpinnerAdapter(this, newBackgroundColors, newBackgroundColorNames)
-        }
-        
+
+
+
         val dialog = AlertDialog.Builder(this)
             .setView(dialogView)
             .create()
-        
+
         dialogView.findViewById<android.view.View>(R.id.btnCancel).setOnClickListener {
             dialog.dismiss()
         }
-        
+
         dialogView.findViewById<android.view.View>(R.id.btnOk).setOnClickListener {
             val needsRestart = cbDarkMode.isChecked != settingsManager.isDarkMode
-            
+
             settingsManager.isDarkMode = cbDarkMode.isChecked
             settingsManager.showEnglish = cbChineseEnglish.isChecked
             settingsManager.fontSize = seekBarFontSize.progress
             settingsManager.fontColorIndex = spinnerFontColor.selectedItemPosition
             settingsManager.backgroundColorIndex = spinnerBackgroundColor.selectedItemPosition
-            
+
             getCurrentMainFragment()?.applySettings(
                 cbChineseEnglish.isChecked,
                 seekBarFontSize.progress,
@@ -217,16 +203,16 @@ class MainActivity : AppCompatActivity() {
                 spinnerBackgroundColor.selectedItemPosition,
                 cbDarkMode.isChecked
             )
-            
+
             if (needsRestart) {
                 recreate()
             } else {
                 applyToolbarTheme()
             }
-            
+
             dialog.dismiss()
         }
-        
+
         dialog.show()
     }
 

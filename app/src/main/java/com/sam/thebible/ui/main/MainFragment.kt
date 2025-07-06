@@ -20,13 +20,14 @@ import com.sam.thebible.data.model.Book
 import com.sam.thebible.utils.SettingsManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.abs
+import android.util.Log;
 
 @AndroidEntryPoint
 class MainFragment : Fragment() {
 
     private var _binding: FragmentMainBinding? = null
     private val binding get() = _binding!!
-    
+
     private val viewModel: MainViewModel by viewModels()
     private lateinit var verseAdapter: VerseAdapter
     private lateinit var searchResultAdapter: SearchResultAdapter
@@ -47,7 +48,7 @@ class MainFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-        
+
         settingsManager = SettingsManager(requireContext())
         setupRecyclerView()
         setupGestureDetector()
@@ -55,42 +56,46 @@ class MainFragment : Fragment() {
         setupToolbarSpinners()
         loadSettings()
     }
-    
+
     private fun loadSettings() {
         currentFontSize = 12f + settingsManager.fontSize * 2f
-        
-        val fontColors = arrayOf(Color.WHITE, Color.BLACK, Color.GREEN, Color.YELLOW, 0xFFFFA500.toInt())
-        currentFontColor = fontColors.getOrElse(settingsManager.fontColorIndex) { Color.BLACK }
-        
-        val backgroundColors = if (settingsManager.isDarkMode) {
-            arrayOf(Color.BLACK, 0xFF2D2D2D.toInt(), 0xFF1A1A1A.toInt())
-        } else {
-            arrayOf(Color.WHITE, Color.BLACK, 0xFFF5F5DC.toInt())
-        }
-        currentBackgroundColor = backgroundColors.getOrElse(settingsManager.backgroundColorIndex) { 
-            if (settingsManager.isDarkMode) Color.BLACK else Color.WHITE 
-        }
-        
+
+        val fontColors = arrayOf(R.color.white, R.color.black, R.color.green, R.color.yellow, R.color.orange)
+        currentFontColor = getColorFromResource(fontColors.getOrElse(settingsManager.fontColorIndex) { R.color.black })
+
+        val backgroundColors = arrayOf(R.color.white, R.color.black, R.color.beige, R.color.dark_gray)
+        currentBackgroundColor = getColorFromResource(backgroundColors.getOrElse(settingsManager.backgroundColorIndex) { R.color.white })
+
         if (settingsManager.showEnglish != (viewModel.showEnglish.value ?: true)) {
             viewModel.toggleEnglish()
         }
-        
+
         applyTextSettings()
+    }
+
+    private fun getColorFromResource(colorRes: Int): Int {
+        return requireContext().getColor(colorRes)
     }
 
     private fun setupToolbarSpinners() {
         val mainActivity = activity as? MainActivity
         val (bookSpinner, chapterSpinner) = mainActivity?.getToolbarSpinners() ?: return
-        
+
         bookSpinner?.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
-                viewModel.books.value?.get(position)?.let { book ->
-                    viewModel.selectBook(book)
+                val book = viewModel.books.value?.get(position) ?: return
+                val toChapter = if (viewModel.lastBook != viewModel.currentBook.value && viewModel.lastChapter == 1) {
+                    book.numChapter ?: 1
+                } else {
+                    1
                 }
+
+                Log.d("MainActivity", "checkpoint current book: ${viewModel.currentBook.value} to Chapter:$toChapter ")
+                viewModel.selectBook(book, toChapter)
             }
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
         })
-        
+
         chapterSpinner?.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
                 viewModel.selectChapter(position + 1)
@@ -102,12 +107,15 @@ class MainFragment : Fragment() {
     private fun setupRecyclerView() {
         verseAdapter = VerseAdapter()
         searchResultAdapter = SearchResultAdapter()
+        searchResultAdapter.setOnItemClickListener { searchResult ->
+            viewModel.jumpToVerse(searchResult.book, searchResult.chapter)
+        }
         binding.rvContent.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = verseAdapter
         }
     }
-    
+
     private fun setupGestureDetector() {
         gestureDetector = GestureDetector(requireContext(), object : GestureDetector.SimpleOnGestureListener() {
             override fun onFling(
@@ -117,10 +125,10 @@ class MainFragment : Fragment() {
                 velocityY: Float
             ): Boolean {
                 if (e1 == null) return false
-                
+
                 val diffX = e2.x - e1.x
                 val diffY = e2.y - e1.y
-                
+
                 if (abs(diffX) > abs(diffY) && abs(diffX) > 100 && abs(velocityX) > 100) {
                     if (diffX > 0) {
                         // Swipe right - previous chapter
@@ -134,7 +142,7 @@ class MainFragment : Fragment() {
                 return false
             }
         })
-        
+
         binding.rvContent.setOnTouchListener { _, event ->
             gestureDetector.onTouchEvent(event)
             false
@@ -145,7 +153,7 @@ class MainFragment : Fragment() {
         viewModel.books.observe(viewLifecycleOwner) { books ->
             setupBookSpinner(books)
         }
-        
+
         viewModel.currentBook.observe(viewLifecycleOwner) { book ->
             book?.let {
                 settingsManager.lastBookCode = it.code
@@ -155,7 +163,7 @@ class MainFragment : Fragment() {
                 setupChapterSpinner(it)
             }
         }
-        
+
         viewModel.currentChapter.observe(viewLifecycleOwner) { chapter ->
             settingsManager.lastChapter = chapter
             val mainActivity = activity as? MainActivity
@@ -164,21 +172,21 @@ class MainFragment : Fragment() {
                 chapterSpinner.setSelection(chapter - 1)
             }
         }
-        
+
         viewModel.verses.observe(viewLifecycleOwner) { verses ->
             verseAdapter.submitList(verses)
             applyTextSettings()
         }
-        
+
         viewModel.showEnglish.observe(viewLifecycleOwner) { showEnglish ->
             verseAdapter.setShowEnglish(showEnglish)
         }
-        
+
         viewModel.searchResults.observe(viewLifecycleOwner) { results ->
             searchResultAdapter.submitList(results)
             searchResultAdapter.updateTextSettings(currentFontSize, currentFontColor)
         }
-        
+
         viewModel.isSearchMode.observe(viewLifecycleOwner) { isSearchMode ->
             if (isSearchMode) {
                 binding.rvContent.adapter = searchResultAdapter
@@ -193,12 +201,12 @@ class MainFragment : Fragment() {
     private fun setupBookSpinner(books: List<Book>) {
         val mainActivity = activity as? MainActivity
         val (bookSpinner, _) = mainActivity?.getToolbarSpinners() ?: return
-        
+
         val bookNames = books.map { it.tcName ?: it.engName ?: it.code }
         val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item_custom, bookNames)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         bookSpinner?.adapter = adapter
-        
+
         // Load last book if available
         val lastBookCode = settingsManager.lastBookCode
         if (lastBookCode.isNotEmpty()) {
@@ -206,7 +214,8 @@ class MainFragment : Fragment() {
             lastBook?.let {
                 val position = books.indexOf(it)
                 bookSpinner?.setSelection(position)
-                viewModel.selectBook(it)
+                val lastChapter = settingsManager.lastChapter
+                viewModel.selectBook(it, lastChapter)
             }
         }
     }
@@ -214,13 +223,13 @@ class MainFragment : Fragment() {
     private fun setupChapterSpinner(book: Book) {
         val mainActivity = activity as? MainActivity
         val (_, chapterSpinner) = mainActivity?.getToolbarSpinners() ?: return
-        
+
         val chapterCount = book.numChapter ?: 1
         val chapters = (1..chapterCount).map { "$it 章" }
         val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item_custom, chapters)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         chapterSpinner?.adapter = adapter
-        
+
         // Load last chapter if same book
         if (book.code == settingsManager.lastBookCode) {
             val lastChapter = settingsManager.lastChapter
@@ -232,18 +241,42 @@ class MainFragment : Fragment() {
     }
 
     fun onPrevChapter() {
+        addFlipAnimation(true)
         viewModel.prevChapter()
     }
-    
+
     fun onNextChapter() {
+        addFlipAnimation(false)
         viewModel.nextChapter()
     }
     
+    private fun addFlipAnimation(isReverse: Boolean) {
+        val pivotX = if (isReverse) binding.rvContent.width.toFloat() else 0f
+        binding.rvContent.pivotX = pivotX
+        binding.rvContent.pivotY = binding.rvContent.height / 2f
+        
+        binding.rvContent.animate()
+            .rotationY(if (isReverse) 90f else -90f)
+            .scaleX(0.8f)
+            .alpha(0.7f)
+            .setDuration(200)
+            .withEndAction {
+                binding.rvContent.rotationY = if (isReverse) -90f else 90f
+                binding.rvContent.animate()
+                    .rotationY(0f)
+                    .scaleX(1f)
+                    .alpha(1f)
+                    .setDuration(200)
+                    .start()
+            }
+            .start()
+    }
+
     fun onSearch(keyword: String) {
         searchResultAdapter.setSearchKeyword(keyword)
         viewModel.search(keyword)
     }
-    
+
     fun exitSearchMode(): Boolean {
         return if (viewModel.isSearchMode.value == true) {
             viewModel.exitSearchMode()
@@ -252,33 +285,27 @@ class MainFragment : Fragment() {
             false
         }
     }
-    
+
     fun getShowEnglish(): Boolean {
         return settingsManager.showEnglish
     }
-    
+
     fun applySettings(showEnglish: Boolean, fontSize: Int, fontColorIndex: Int, backgroundColorIndex: Int, isDarkMode: Boolean) {
         if (showEnglish != (viewModel.showEnglish.value ?: true)) {
             viewModel.toggleEnglish()
         }
-        
+
         currentFontSize = 12f + fontSize * 2f
-        
-        val fontColors = arrayOf(Color.WHITE, Color.BLACK, Color.GREEN, Color.YELLOW, 0xFFFFA500.toInt())
-        currentFontColor = fontColors.getOrElse(fontColorIndex) { Color.BLACK }
-        
-        val backgroundColors = if (isDarkMode) {
-            arrayOf(Color.BLACK, 0xFF2D2D2D.toInt(), 0xFF1A1A1A.toInt())
-        } else {
-            arrayOf(Color.WHITE, Color.BLACK, 0xFFF5F5DC.toInt())
-        }
-        currentBackgroundColor = backgroundColors.getOrElse(backgroundColorIndex) { 
-            if (isDarkMode) Color.BLACK else Color.WHITE 
-        }
-        
+
+        val fontColors = arrayOf(R.color.white, R.color.black, R.color.green, R.color.yellow, R.color.orange)
+        currentFontColor = getColorFromResource(fontColors.getOrElse(fontColorIndex) { R.color.black })
+
+        val backgroundColors = arrayOf(R.color.white, R.color.black, R.color.beige, R.color.dark_gray)
+        currentBackgroundColor = getColorFromResource(backgroundColors.getOrElse(backgroundColorIndex) { R.color.white })
+
         applyTextSettings()
     }
-    
+
     private fun applyTextSettings() {
         binding.rvContent.setBackgroundColor(currentBackgroundColor)
         verseAdapter.updateTextSettings(currentFontSize, currentFontColor)

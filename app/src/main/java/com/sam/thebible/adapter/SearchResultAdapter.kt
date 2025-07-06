@@ -17,6 +17,11 @@ class SearchResultAdapter : ListAdapter<SearchResult, SearchResultAdapter.ViewHo
     private var keyword: String = ""
     private var fontSize: Float = 16f
     private var fontColor: Int = Color.BLACK
+    private var onItemClickListener: ((SearchResult) -> Unit)? = null
+    
+    fun setOnItemClickListener(listener: (SearchResult) -> Unit) {
+        onItemClickListener = listener
+    }
 
     fun setSearchKeyword(keyword: String) {
         this.keyword = keyword
@@ -59,6 +64,10 @@ class SearchResultAdapter : ListAdapter<SearchResult, SearchResultAdapter.ViewHo
             binding.tvContent.textSize = fontSize
             binding.tvBookChapter.setTextColor(fontColor)
             binding.tvContent.setTextColor(fontColor)
+            
+            binding.root.setOnClickListener {
+                onItemClickListener?.invoke(result)
+            }
         }
         
         private fun highlightKeyword(content: String, keyword: String): SpannableString {
