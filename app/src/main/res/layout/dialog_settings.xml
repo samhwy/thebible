@@ -20,12 +20,7 @@
         android:text="@string/dark_mode"
         android:layout_marginBottom="8dp" />
 
-    <CheckBox
-        android:id="@+id/cbChineseEnglish"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/chinese_english"
-        android:layout_marginBottom="16dp" />
+
 
     <TextView
         android:layout_width="wrap_content"

@@ -4,6 +4,7 @@ import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
 import android.view.LayoutInflater
+import android.view.MenuItem
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.SeekBar
@@ -11,7 +12,9 @@ import android.widget.Spinner
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
+import androidx.core.view.GravityCompat
 import androidx.navigation.ui.AppBarConfiguration
+import com.google.android.material.navigation.NavigationView
 import com.sam.thebible.adapter.ColorSpinnerAdapter
 import com.sam.thebible.databinding.ActivityMainBinding
 import com.sam.thebible.ui.main.MainFragment
@@ -19,7 +22,7 @@ import com.sam.thebible.utils.SettingsManager
 import dagger.hilt.android.AndroidEntryPoint
 
 @AndroidEntryPoint
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelectedListener {
 
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
@@ -45,6 +48,10 @@ class MainActivity : AppCompatActivity() {
 
         appBarConfiguration = AppBarConfiguration(navController.graph)
 
+        // Setup navigation drawer
+        binding.navView.setNavigationItemSelectedListener(this)
+        setupDrawerHeader()
+        
         // Setup toolbar controls after fragment is loaded
         navController.addOnDestinationChangedListener { _, _, _ ->
             checkScreenSpace()
@@ -54,11 +61,15 @@ class MainActivity : AppCompatActivity() {
         // Setup back button handling
         onBackPressedDispatcher.addCallback(this, object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                val fragment = getCurrentMainFragment()
-                if (fragment != null && fragment.exitSearchMode()) {
-                    // Search mode was exited, stay in app
+                if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
+                    binding.drawerLayout.closeDrawer(GravityCompat.END)
                 } else {
-                    finish()
+                    val fragment = getCurrentMainFragment()
+                    if (fragment != null && fragment.exitSearchMode()) {
+                        // Search mode was exited, stay in app
+                    } else {
+                        finish()
+                    }
                 }
             }
         })
@@ -73,12 +84,8 @@ class MainActivity : AppCompatActivity() {
             getCurrentMainFragment()?.onNextChapter()
         }
 
-        binding.toolbar.findViewById<android.widget.ImageButton>(R.id.btnSearch)?.setOnClickListener {
-            showSearchDialog()
-        }
-
-        binding.toolbar.findViewById<android.widget.ImageButton>(R.id.btnSettings)?.setOnClickListener {
-            showSettingsDialog()
+        binding.toolbar.findViewById<android.widget.ImageButton>(R.id.btnMenu)?.setOnClickListener {
+            binding.drawerLayout.openDrawer(GravityCompat.END)
         }
     }
 
@@ -139,7 +146,6 @@ class MainActivity : AppCompatActivity() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_settings, null)
 
         val cbDarkMode = dialogView.findViewById<CheckBox>(R.id.cbDarkMode)
-        val cbChineseEnglish = dialogView.findViewById<CheckBox>(R.id.cbChineseEnglish)
         val seekBarFontSize = dialogView.findViewById<SeekBar>(R.id.seekBarFontSize)
         val spinnerFontColor = dialogView.findViewById<Spinner>(R.id.spinnerFontColor)
         val spinnerBackgroundColor = dialogView.findViewById<Spinner>(R.id.spinnerBackgroundColor)
@@ -172,7 +178,6 @@ class MainActivity : AppCompatActivity() {
 
         // Set current values
         cbDarkMode.isChecked = settingsManager.isDarkMode
-        cbChineseEnglish.isChecked = settingsManager.showEnglish
         seekBarFontSize.progress = settingsManager.fontSize
         spinnerFontColor.setSelection(settingsManager.fontColorIndex)
         spinnerBackgroundColor.setSelection(settingsManager.backgroundColorIndex)
@@ -191,13 +196,12 @@ class MainActivity : AppCompatActivity() {
             val needsRestart = cbDarkMode.isChecked != settingsManager.isDarkMode
 
             settingsManager.isDarkMode = cbDarkMode.isChecked
-            settingsManager.showEnglish = cbChineseEnglish.isChecked
             settingsManager.fontSize = seekBarFontSize.progress
             settingsManager.fontColorIndex = spinnerFontColor.selectedItemPosition
             settingsManager.backgroundColorIndex = spinnerBackgroundColor.selectedItemPosition
 
             getCurrentMainFragment()?.applySettings(
-                cbChineseEnglish.isChecked,
+                settingsManager.showEnglish,
                 seekBarFontSize.progress,
                 spinnerFontColor.selectedItemPosition,
                 spinnerBackgroundColor.selectedItemPosition,
@@ -221,6 +225,36 @@ class MainActivity : AppCompatActivity() {
         val bookSpinner = binding.toolbar.findViewById<Spinner>(R.id.spinnerBooks)
         val chapterSpinner = binding.toolbar.findViewById<Spinner>(R.id.spinnerChapters)
         return Pair(bookSpinner, chapterSpinner)
+    }
+
+    private fun setupDrawerHeader() {
+        val headerView = binding.navView.getHeaderView(0)
+        val cbChineseEnglish = headerView.findViewById<CheckBox>(R.id.cbChineseEnglish)
+        
+        cbChineseEnglish.isChecked = settingsManager.showEnglish
+        cbChineseEnglish.setOnCheckedChangeListener { _, isChecked ->
+            settingsManager.showEnglish = isChecked
+            getCurrentMainFragment()?.applySettings(
+                isChecked,
+                settingsManager.fontSize,
+                settingsManager.fontColorIndex,
+                settingsManager.backgroundColorIndex,
+                settingsManager.isDarkMode
+            )
+        }
+    }
+
+    override fun onNavigationItemSelected(item: MenuItem): Boolean {
+        when (item.itemId) {
+            R.id.nav_search -> {
+                showSearchDialog()
+            }
+            R.id.nav_settings -> {
+                showSettingsDialog()
+            }
+        }
+        binding.drawerLayout.closeDrawer(GravityCompat.END)
+        return true
     }
 
     override fun onSupportNavigateUp(): Boolean {
