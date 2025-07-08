@@ -47,7 +47,7 @@ class SettingsManager(private val context: Context) {
             prefs.edit().putString("last_book", value).commit() // Using commit() for immediate write
             savePositionToFile()
             Log.d(TAG, "lastBookCode set to: $value")
-}
+        }
 
     var lastChapter: Int
         get() = prefs.getInt("last_chapter", 1)
@@ -103,24 +103,24 @@ class SettingsManager(private val context: Context) {
             FileInputStream(backupFile).use { input ->
                 properties.load(input)
 
-                val book = properties.getProperty("last_book")
-                val chapter = properties.getProperty("last_chapter")?.toIntOrNull() ?: 1
+                lastBookCode = properties.getProperty("last_book")
+                lastChapter = properties.getProperty("last_chapter")?.toIntOrNull() ?: 1
 
-                Log.d(TAG, "Read from backup file: Book=$book, Chapter=$chapter")
+                Log.d(TAG, "Read from backup file: Book=$lastBookCode, Chapter=$lastChapter")
 
-                if (!book.isNullOrEmpty()) {
+                 /* if (!book.isNullOrEmpty()) {
                     // Update SharedPreferences with values from file
                     val editor = prefs.edit()
                     editor.putString("last_book", book)
                     editor.putInt("last_chapter", chapter)
-                    val success = editor.commit() // Using commit() for immediate write
+                     val success = editor.commit() // Using commit() for immediate write
 
                     if (success) {
                         Log.d(TAG, "Position successfully restored to SharedPreferences")
                     } else {
                         Log.e(TAG, "Failed to commit position to SharedPreferences")
                     }
-                }
+                } */
             }
         } catch (e: IOException) {
             Log.e(TAG, "Failed to restore position from file", e)

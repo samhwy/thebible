@@ -11,6 +11,7 @@ import com.sam.thebible.data.model.Verse
 import com.sam.thebible.data.repository.BibleRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
+import java.lang.Thread.sleep
 import javax.inject.Inject
 import kotlin.math.absoluteValue
 
@@ -46,16 +47,21 @@ class MainViewModel @Inject constructor(
     init {
         _showEnglish.value = true
         _isSearchMode.value = false
-        loadBooks()
+        //loadBooks()
     }
 
-    private fun loadBooks() {
+    //private
+    fun loadBooks(book: String, chapter: Int = 1) {
         viewModelScope.launch {
             try {
+                
                 val bookList = repository.getAllBooks()
                 _books.value = bookList
+                
                 if (bookList.isNotEmpty()) {
-                    selectBook(bookList[0])
+                    var bookObj = bookList.firstOrNull { it.code == book }?: bookList.first()
+                    Log.d("selectBook", "Checkpoint 1 load books: ${bookList.size}")
+                    selectBook(bookObj, chapter)
                 }
             } catch (e: Exception) {
                 // Handle error
@@ -65,9 +71,10 @@ class MainViewModel @Inject constructor(
         }
     }
 
+
     fun selectBook(book: Book, chapter: Int = 1) {
         Log.d("selectBook", "checkpoint curr book: $lastBook, chapter: $lastChapter")
-        // Thread.dumpStack()
+        Thread.dumpStack()
         _currentBook.value = book
         _currentChapter.value = chapter
         if (lastBook!= book && lastChapter == 1) {  //check current book and chapter is the 1st chapter of last book

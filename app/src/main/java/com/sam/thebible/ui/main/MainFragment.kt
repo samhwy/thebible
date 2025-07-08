@@ -21,6 +21,7 @@ import com.sam.thebible.utils.SettingsManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.abs
 import android.util.Log;
+import java.lang.Thread.sleep
 
 @AndroidEntryPoint
 class MainFragment : Fragment() {
@@ -36,6 +37,7 @@ class MainFragment : Fragment() {
     private var currentFontSize = 16f
     private var currentFontColor = Color.BLACK
     private var currentBackgroundColor = Color.WHITE
+    private var reloadPosition = false
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -55,6 +57,16 @@ class MainFragment : Fragment() {
         setupObservers()
         setupToolbarSpinners()
         loadSettings()
+        val book = settingsManager.lastBookCode
+        if (book.isNotEmpty()) {
+            //  Reload the last saved position if the book is not empty
+            reloadPosition = true
+            Log.d("MainActivity", "checkpoint saved book: $book saved chapter: ${settingsManager.lastChapter}")
+            viewModel.loadBooks(book, settingsManager.lastChapter)
+        } else {
+            viewModel.loadBooks("GEN", 1)
+        }
+
     }
 
     private fun loadSettings() {
@@ -91,7 +103,10 @@ class MainFragment : Fragment() {
                 }
 
                 Log.d("MainActivity", "checkpoint current book: ${viewModel.currentBook.value} to Chapter:$toChapter ")
-                viewModel.selectBook(book, toChapter)
+                if (!reloadPosition)
+                    viewModel.selectBook(book, toChapter)
+
+                reloadPosition = false // Reset the flag after restoring the last saved position in onViewCreated
             }
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
         })
@@ -215,7 +230,8 @@ class MainFragment : Fragment() {
                 val position = books.indexOf(it)
                 bookSpinner?.setSelection(position)
                 val lastChapter = settingsManager.lastChapter
-                viewModel.selectBook(it, lastChapter)
+                if (!reloadPosition)
+                   viewModel.selectBook(it, lastChapter)
             }
         }
     }
