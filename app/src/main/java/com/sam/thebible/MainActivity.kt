@@ -54,7 +54,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         
         // Setup toolbar controls after fragment is loaded
         navController.addOnDestinationChangedListener { _, _, _ ->
-            checkScreenSpace()
             setupToolbarControls()
         }
 
@@ -131,16 +130,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
-    private fun checkScreenSpace() {
-        val displayMetrics = resources.displayMetrics
-        val screenWidth = displayMetrics.widthPixels / displayMetrics.density
 
-        if (screenWidth < 400) {
-            // Switch to responsive layout for small screens
-            binding.toolbar.removeAllViews()
-            layoutInflater.inflate(R.layout.toolbar_responsive, binding.toolbar, true)
-        }
-    }
 
     private fun showSettingsDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_settings, null)
@@ -209,6 +199,15 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             )
 
             if (needsRestart) {
+                // Save current position before recreating activity
+                val fragment = getCurrentMainFragment()
+                if (fragment != null) {
+                    val currentBook = fragment.viewModel.currentBook.value
+                    val currentChapter = fragment.viewModel.currentChapter.value ?: 1
+                    if (currentBook != null) {
+                        settingsManager.saveCurrentPosition(currentBook.code, currentChapter)
+                    }
+                }
                 recreate()
             } else {
                 applyToolbarTheme()
@@ -221,7 +220,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     fun getToolbarSpinners(): Pair<Spinner?, Spinner?> {
-        // Try both layouts (normal and responsive)
         val bookSpinner = binding.toolbar.findViewById<Spinner>(R.id.spinnerBooks)
         val chapterSpinner = binding.toolbar.findViewById<Spinner>(R.id.spinnerChapters)
         return Pair(bookSpinner, chapterSpinner)
