@@ -3,6 +3,7 @@ package com.sam.thebible
 import android.app.AlertDialog
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
 import android.widget.CheckBox
@@ -202,6 +203,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 // Save current position before recreating activity
                 val fragment = getCurrentMainFragment()
                 if (fragment != null) {
+                    Log.d("MainActivity", "checkpoint 3: currentChapter: ${fragment.viewModel.currentChapter.value} ")
                     val currentBook = fragment.viewModel.currentBook.value
                     val currentChapter = fragment.viewModel.currentChapter.value ?: 1
                     if (currentBook != null) {

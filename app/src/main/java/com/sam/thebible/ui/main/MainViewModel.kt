@@ -74,7 +74,7 @@ class MainViewModel @Inject constructor(
 
     fun selectBook(book: Book, chapter: Int = 1) {
         Log.d("selectBook", "checkpoint curr book: $lastBook, chapter: $lastChapter")
-        Thread.dumpStack()
+        //Thread.dumpStack()
         _currentBook.value = book
         _currentChapter.value = chapter
         if (lastBook!= book && lastChapter == 1) {  //check current book and chapter is the 1st chapter of last book

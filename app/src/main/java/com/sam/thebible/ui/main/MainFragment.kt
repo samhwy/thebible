@@ -99,7 +99,7 @@ class MainFragment : Fragment() {
                 val toChapter = if (viewModel.lastBook != viewModel.currentBook.value && viewModel.lastChapter == 1) {
                     book.numChapter ?: 1
                 } else {
-                    1
+                    settingsManager.lastChapter ?: 1 // 1
                 }
 
                 Log.d("MainActivity", "checkpoint current book: ${viewModel.currentBook.value} to Chapter:$toChapter ")
@@ -180,6 +180,8 @@ class MainFragment : Fragment() {
         }
 
         viewModel.currentChapter.observe(viewLifecycleOwner) { chapter ->
+            Log.d("MainActivity", "checkpoint 4 current chapter: $chapter")
+            //Thread.dumpStack()
             settingsManager.lastChapter = chapter
             val mainActivity = activity as? MainActivity
             val (_, chapterSpinner) = mainActivity?.getToolbarSpinners() ?: return@observe

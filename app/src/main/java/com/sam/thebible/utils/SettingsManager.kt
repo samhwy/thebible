@@ -39,7 +39,9 @@ class SettingsManager(private val context: Context) {
 
     var isDarkMode: Boolean
         get() = prefs.getBoolean("dark_mode", true)
-        set(value) = prefs.edit().putBoolean("dark_mode", value).apply()
+        set(value) {
+            prefs.edit().putBoolean("dark_mode", value).apply()
+        }
 
     var lastBookCode: String
         get() = prefs.getString("last_book", "") ?: ""
@@ -66,14 +68,14 @@ class SettingsManager(private val context: Context) {
         val currentChapter = lastChapter
         properties.setProperty("last_book", currentBook)
         properties.setProperty("last_chapter", currentChapter.toString())
-
+        // Thread.dumpStack()
         try {
             // Ensure the parent directory exists
             backupFile.parentFile?.mkdirs()
 
             FileOutputStream(backupFile).use { output ->
                 properties.store(output, "Bible Position Backup")
-                Log.d(TAG, "Position saved to file: Book=$currentBook, Chapter=$currentChapter")
+                Log.d(TAG, "Position 1 saved to file: Book=$currentBook, Chapter=$currentChapter")
             }
 
             // Verify file was created and has content
@@ -108,19 +110,6 @@ class SettingsManager(private val context: Context) {
 
                 Log.d(TAG, "Read from backup file: Book=$lastBookCode, Chapter=$lastChapter")
 
-                 /* if (!book.isNullOrEmpty()) {
-                    // Update SharedPreferences with values from file
-                    val editor = prefs.edit()
-                    editor.putString("last_book", book)
-                    editor.putInt("last_chapter", chapter)
-                     val success = editor.commit() // Using commit() for immediate write
-
-                    if (success) {
-                        Log.d(TAG, "Position successfully restored to SharedPreferences")
-                    } else {
-                        Log.e(TAG, "Failed to commit position to SharedPreferences")
-                    }
-                } */
             }
         } catch (e: IOException) {
             Log.e(TAG, "Failed to restore position from file", e)
@@ -135,7 +124,7 @@ class SettingsManager(private val context: Context) {
         if (bookCode.isEmpty()) {
             Log.w(TAG, "Attempted to save empty book code, ignoring")
             return
-    }
+        }
 
         Log.d(TAG, "Saving current position: Book=$bookCode, Chapter=$chapter")
 
@@ -149,7 +138,7 @@ class SettingsManager(private val context: Context) {
             Log.d(TAG, "Position saved to SharedPreferences successfully")
         } else {
             Log.e(TAG, "Failed to save position to SharedPreferences")
-}
+        }
 
         // Now save to backup file
         val properties = Properties()
