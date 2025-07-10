@@ -152,13 +152,14 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         )
 
         // Background colors: white, black, parchment, dark gray, very dark
-        val backgroundColors = arrayOf(Color.WHITE, Color.BLACK, 0xFFF5F5DC.toInt(), 0xFF2D2D2D.toInt(), 0xFF1A1A1A.toInt())
+        val backgroundColors = arrayOf(Color.WHITE, Color.BLACK, R.color.parchment, R.color.dark_gray) //, 0xFF1A1A1A.toInt())
         val backgroundColorNames = arrayOf(
             getString(R.string.white),
             getString(R.string.black),
             getString(R.string.parchment),
-            "深灰",
-            "極深"
+            getString(R.string.darkgray)
+            /*,
+            "極深" */
         )
 
         val fontColorAdapter = ColorSpinnerAdapter(this, fontColors, fontColorNames)
@@ -195,8 +196,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 settingsManager.showEnglish,
                 seekBarFontSize.progress,
                 spinnerFontColor.selectedItemPosition,
-                spinnerBackgroundColor.selectedItemPosition,
-                cbDarkMode.isChecked
+                spinnerBackgroundColor.selectedItemPosition
             )
 
             if (needsRestart) {
@@ -238,8 +238,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 isChecked,
                 settingsManager.fontSize,
                 settingsManager.fontColorIndex,
-                settingsManager.backgroundColorIndex,
-                settingsManager.isDarkMode
+                settingsManager.backgroundColorIndex
             )
         }
     }

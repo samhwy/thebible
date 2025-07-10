@@ -20,8 +20,7 @@ import com.sam.thebible.data.model.Book
 import com.sam.thebible.utils.SettingsManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.abs
-import android.util.Log;
-import java.lang.Thread.sleep
+import android.util.Log
 
 @AndroidEntryPoint
 class MainFragment : Fragment() {
@@ -75,7 +74,7 @@ class MainFragment : Fragment() {
         val fontColors = arrayOf(R.color.white, R.color.black, R.color.green, R.color.yellow, R.color.orange)
         currentFontColor = getColorFromResource(fontColors.getOrElse(settingsManager.fontColorIndex) { R.color.black })
 
-        val backgroundColors = arrayOf(R.color.white, R.color.black, R.color.beige, R.color.dark_gray)
+        val backgroundColors = arrayOf(R.color.white, R.color.black, R.color.parchment, R.color.dark_gray)
         currentBackgroundColor = getColorFromResource(backgroundColors.getOrElse(settingsManager.backgroundColorIndex) { R.color.white })
 
         if (settingsManager.showEnglish != (viewModel.showEnglish.value ?: true)) {
@@ -98,9 +97,10 @@ class MainFragment : Fragment() {
                 val book = viewModel.books.value?.get(position) ?: return
                 val toChapter = if (viewModel.lastBook != viewModel.currentBook.value && viewModel.lastChapter == 1) {
                     book.numChapter ?: 1
-                } else {
-                    settingsManager.lastChapter ?: 1 // 1
-                }
+                } else if (book.code != settingsManager.lastBookCode || book.numChapter?:0 < settingsManager.lastChapter)
+                    1
+                else
+                    settingsManager.lastChapter
 
                 Log.d("MainActivity", "checkpoint current book: ${viewModel.currentBook.value} to Chapter:$toChapter ")
                 if (!reloadPosition)
@@ -304,11 +304,8 @@ class MainFragment : Fragment() {
         }
     }
 
-    fun getShowEnglish(): Boolean {
-        return settingsManager.showEnglish
-    }
 
-    fun applySettings(showEnglish: Boolean, fontSize: Int, fontColorIndex: Int, backgroundColorIndex: Int, isDarkMode: Boolean) {
+    fun applySettings(showEnglish: Boolean, fontSize: Int, fontColorIndex: Int, backgroundColorIndex: Int) {
         if (showEnglish != (viewModel.showEnglish.value ?: true)) {
             viewModel.toggleEnglish()
         }
@@ -318,7 +315,7 @@ class MainFragment : Fragment() {
         val fontColors = arrayOf(R.color.white, R.color.black, R.color.green, R.color.yellow, R.color.orange)
         currentFontColor = getColorFromResource(fontColors.getOrElse(fontColorIndex) { R.color.black })
 
-        val backgroundColors = arrayOf(R.color.white, R.color.black, R.color.beige, R.color.dark_gray)
+        val backgroundColors = arrayOf(R.color.white, R.color.black, R.color.parchment, R.color.dark_gray)
         currentBackgroundColor = getColorFromResource(backgroundColors.getOrElse(backgroundColorIndex) { R.color.white })
 
         applyTextSettings()
