@@ -1,14 +1,15 @@
 # Bible App (聖經)
 
-An Android Bible reading app with Chinese and English text support.
+An Android Bible reading app with Chinese (Major) and English text support.
 
 ## Features
 
-- Browse Bible books and chapters
-- Chinese-English parallel reading
+- Chinese-English parallel reading. Can toggle English display.
+- Offline bible reading
 - Search functionality
-- Modern Android architecture (MVVM)
-- Offline reading capability
+- Dark mode. Allow selecting font size, colour and background colour.
+- Remember last reading position
+- allow swiping to next page 
 
 ## Architecture
 
