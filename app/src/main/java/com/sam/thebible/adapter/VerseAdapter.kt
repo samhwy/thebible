@@ -13,6 +13,11 @@ class VerseAdapter : ListAdapter<Verse, VerseAdapter.VerseViewHolder>(VerseDiffC
     private var showEnglish = true
     private var fontSize = 16f
     private var textColor = android.graphics.Color.BLACK
+    private var onTextSelectedListener: ((Verse, String) -> Unit)? = null
+    
+    fun setOnTextSelectedListener(listener: (Verse, String) -> Unit) {
+        onTextSelectedListener = listener
+    }
 
     fun setShowEnglish(show: Boolean) {
         showEnglish = show
@@ -44,11 +49,23 @@ class VerseAdapter : ListAdapter<Verse, VerseAdapter.VerseViewHolder>(VerseDiffC
             binding.tvVerseNumber.setTextColor(textColor)
             binding.tvChineseContent.setTextColor(textColor)
             
+            // Enable text selection
+            binding.tvChineseContent.setTextIsSelectable(true)
+            binding.tvChineseContent.setOnLongClickListener {
+                onTextSelectedListener?.invoke(verse, binding.tvChineseContent.text.toString())
+                true
+            }
+            
             if (showEnglish && verse.englishContent.isNotEmpty()) {
                 binding.tvEnglishContent.text = verse.englishContent
                 binding.tvEnglishContent.textSize = fontSize
                 binding.tvEnglishContent.setTextColor(textColor)
                 binding.tvEnglishContent.visibility = android.view.View.VISIBLE
+                binding.tvEnglishContent.setTextIsSelectable(true)
+                binding.tvEnglishContent.setOnLongClickListener {
+                    onTextSelectedListener?.invoke(verse, binding.tvEnglishContent.text.toString())
+                    true
+                }
             } else {
                 binding.tvEnglishContent.visibility = android.view.View.GONE
             }

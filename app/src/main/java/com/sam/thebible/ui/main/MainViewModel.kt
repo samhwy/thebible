@@ -177,4 +177,21 @@ class MainViewModel @Inject constructor(
             _isSearchMode.value = false
         }
     }
+    
+    fun addBookmark(book: String, chapter: Int, verse: Int, selectedText: String, notes: String) {
+        viewModelScope.launch {
+            try {
+                val bookmark = com.sam.thebible.data.model.Bookmark(
+                    book = book,
+                    chapter = chapter,
+                    verse = verse,
+                    selectedText = selectedText,
+                    notes = notes
+                )
+                repository.addBookmark(bookmark)
+            } catch (e: Exception) {
+                println("Error adding bookmark: ${e.message}")
+            }
+        }
+    }
 }

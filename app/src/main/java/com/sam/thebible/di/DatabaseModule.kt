@@ -3,6 +3,7 @@ package com.sam.thebible.di
 import android.content.Context
 import com.sam.thebible.data.database.BibleDatabase
 import com.sam.thebible.data.database.dao.BookDao
+import com.sam.thebible.data.database.dao.BookmarkDao
 import com.sam.thebible.data.database.dao.ChapterDao
 import com.sam.thebible.data.database.dao.SearchDao
 import dagger.Module
@@ -30,4 +31,7 @@ object DatabaseModule {
     
     @Provides
     fun provideSearchDao(database: BibleDatabase): SearchDao = database.searchDao()
+    
+    @Provides
+    fun provideBookmarkDao(database: BibleDatabase): BookmarkDao = database.bookmarkDao()
 }

@@ -3,17 +3,20 @@ package com.sam.thebible.data.database
 import androidx.room.Database
 import androidx.room.Room
 import androidx.room.RoomDatabase
+import androidx.sqlite.db.SupportSQLiteDatabase
 import android.content.Context
 import com.sam.thebible.data.database.dao.BookDao
+import com.sam.thebible.data.database.dao.BookmarkDao
 import com.sam.thebible.data.database.dao.ChapterDao
 import com.sam.thebible.data.database.dao.SearchDao
 import com.sam.thebible.data.model.Book
+import com.sam.thebible.data.model.Bookmark
 import com.sam.thebible.data.model.ChineseVerse
 import com.sam.thebible.data.model.EnglishVerse
 
 @Database(
-    entities = [Book::class, ChineseVerse::class, EnglishVerse::class],
-    version = 1,
+    entities = [Book::class, ChineseVerse::class, EnglishVerse::class, Bookmark::class],
+    version = 2,
     exportSchema = false
 )
 abstract class BibleDatabase : RoomDatabase() {
@@ -32,11 +35,30 @@ abstract class BibleDatabase : RoomDatabase() {
                     BibleDatabase::class.java,
                     "bible_database"
                 ).createFromAsset("bible.db")
-                    // .fallbackToDestructiveMigration()  // uncomment this if sqlite structure changed
+                    .addCallback(object : RoomDatabase.Callback() {
+                        override fun onCreate(db: SupportSQLiteDatabase) {
+                            super.onCreate(db)
+                            // Create bookmarks table if it doesn't exist
+                            db.execSQL("""
+                                CREATE TABLE IF NOT EXISTS bookmarks (
+                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                    book TEXT NOT NULL,
+                                    chapter INTEGER NOT NULL,
+                                    verse INTEGER NOT NULL,
+                                    selectedText TEXT NOT NULL,
+                                    notes TEXT DEFAULT '',
+                                    timestamp INTEGER NOT NULL
+                                )
+                            """.trimIndent())
+                        }
+                    })
+                    .fallbackToDestructiveMigration()
                     .build()
                 INSTANCE = instance
                 instance
             }
         }
     }
+
+    abstract fun bookmarkDao(): BookmarkDao
 }

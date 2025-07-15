@@ -13,7 +13,8 @@ import javax.inject.Singleton
 class BibleRepository @Inject constructor(
     private val bookDao: BookDao,
     private val chapterDao: ChapterDao,
-    private val searchDao: SearchDao
+    private val searchDao: SearchDao,
+    private val bookmarkDao: com.sam.thebible.data.database.dao.BookmarkDao
 ) {
     suspend fun getAllBooks(): List<Book> = bookDao.getAllBooks()
     
@@ -58,4 +59,10 @@ class BibleRepository @Inject constructor(
             )
         } else sortedResults
     }
+    
+    suspend fun addBookmark(bookmark: com.sam.thebible.data.model.Bookmark) = bookmarkDao.insertBookmark(bookmark)
+    
+    suspend fun getAllBookmarks() = bookmarkDao.getAllBookmarks()
+    
+    suspend fun deleteBookmark(bookmark: com.sam.thebible.data.model.Bookmark) = bookmarkDao.deleteBookmark(bookmark)
 }

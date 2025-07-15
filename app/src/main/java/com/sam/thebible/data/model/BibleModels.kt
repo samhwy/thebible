@@ -37,7 +37,6 @@ data class ChineseVerse(
     val content: String
 )
 
-
 @Entity(
     tableName = "kjv",
     primaryKeys = ["book", "chapter", "verse"] // Composite primary key

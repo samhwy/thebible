@@ -1,6 +1,8 @@
 *.iml
+*.log
 .gradle
 /local.properties
+/.idea
 /.idea/caches
 /.idea/libraries
 /.idea/modules.xml
@@ -8,6 +10,8 @@
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
 .DS_Store
+/.kotlin
+/.vscode
 /build
 /captures
 .externalNativeBuild

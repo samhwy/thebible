@@ -17,6 +17,7 @@ import com.sam.thebible.adapter.SearchResultAdapter
 import com.sam.thebible.adapter.VerseAdapter
 import com.sam.thebible.databinding.FragmentMainBinding
 import com.sam.thebible.data.model.Book
+import com.sam.thebible.data.model.Verse
 import com.sam.thebible.utils.SettingsManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.abs
@@ -124,6 +125,9 @@ class MainFragment : Fragment() {
         searchResultAdapter = SearchResultAdapter()
         searchResultAdapter.setOnItemClickListener { searchResult ->
             viewModel.jumpToVerse(searchResult.book, searchResult.chapter)
+        }
+        verseAdapter.setOnTextSelectedListener { verse, selectedText ->
+            showBookmarkDialog(verse, selectedText)
         }
         binding.rvContent.apply {
             layoutManager = LinearLayoutManager(context)
@@ -329,6 +333,37 @@ class MainFragment : Fragment() {
 
     private fun getBookPosition(book: Book): Int {
         return viewModel.books.value?.indexOf(book) ?: 0
+    }
+
+    private fun showBookmarkDialog(verse: Verse, selectedText: String) {
+        val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_bookmark, null)
+        val tvSelectedText = dialogView.findViewById<android.widget.TextView>(R.id.tvSelectedText)
+        val etNotes = dialogView.findViewById<android.widget.EditText>(R.id.etNotes)
+        
+        tvSelectedText.text = "${verse.book} ${verse.chapter}:${verse.verse} - $selectedText"
+        
+        val dialog = android.app.AlertDialog.Builder(requireContext())
+            .setView(dialogView)
+            .create()
+        
+        dialogView.findViewById<android.view.View>(R.id.btnCopy).setOnClickListener {
+            val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+            val clip = android.content.ClipData.newPlainText("Bible Verse", tvSelectedText.text)
+            clipboard.setPrimaryClip(clip)
+            android.widget.Toast.makeText(requireContext(), "Copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
+        }
+        
+        dialogView.findViewById<android.view.View>(R.id.btnCancel).setOnClickListener {
+            dialog.dismiss()
+        }
+        
+        dialogView.findViewById<android.view.View>(R.id.btnSave).setOnClickListener {
+            val notes = etNotes.text.toString()
+            viewModel.addBookmark(verse.book, verse.chapter, verse.verse, selectedText, notes)
+            dialog.dismiss()
+        }
+        
+        dialog.show()
     }
 
     override fun onDestroyView() {
