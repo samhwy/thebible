@@ -18,6 +18,7 @@ import androidx.navigation.ui.AppBarConfiguration
 import com.google.android.material.navigation.NavigationView
 import com.sam.thebible.adapter.ColorSpinnerAdapter
 import com.sam.thebible.databinding.ActivityMainBinding
+import com.sam.thebible.ui.bookmarks.BookmarksFragment
 import com.sam.thebible.ui.main.MainFragment
 import com.sam.thebible.utils.SettingsManager
 import dagger.hilt.android.AndroidEntryPoint
@@ -52,7 +53,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         // Setup navigation drawer
         binding.navView.setNavigationItemSelectedListener(this)
         setupDrawerHeader()
-        
+
         // Setup toolbar controls after fragment is loaded
         navController.addOnDestinationChangedListener { _, _, _ ->
             setupToolbarControls()
@@ -63,6 +64,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             override fun handleOnBackPressed() {
                 if (binding.drawerLayout.isDrawerOpen(GravityCompat.END)) {
                     binding.drawerLayout.closeDrawer(GravityCompat.END)
+                } else if (supportFragmentManager.backStackEntryCount > 0) {
+                    // Pop back stack if there are fragments in the back stack (like BookmarksFragment)
+                    supportFragmentManager.popBackStack()
                 } else {
                     val fragment = getCurrentMainFragment()
                     if (fragment != null && fragment.exitSearchMode()) {
@@ -89,7 +93,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
-    private fun getCurrentMainFragment(): MainFragment? {
+    fun getCurrentMainFragment(): MainFragment? {
         val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main)
         return navHostFragment?.childFragmentManager?.fragments?.firstOrNull() as? MainFragment
     }
@@ -227,10 +231,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         return Pair(bookSpinner, chapterSpinner)
     }
 
+    private fun showBookmarksFragment() {
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.nav_host_fragment_content_main, BookmarksFragment())
+            .addToBackStack(null)
+            .commit()
+    }
+
     private fun setupDrawerHeader() {
         val headerView = binding.navView.getHeaderView(0)
         val cbChineseEnglish = headerView.findViewById<CheckBox>(R.id.cbChineseEnglish)
-        
+
         cbChineseEnglish.isChecked = settingsManager.showEnglish
         cbChineseEnglish.setOnCheckedChangeListener { _, isChecked ->
             settingsManager.showEnglish = isChecked
@@ -250,6 +261,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             R.id.nav_settings -> {
                 showSettingsDialog()
+            }
+            R.id.nav_bookmarks -> {
+                showBookmarksFragment()
             }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.END)

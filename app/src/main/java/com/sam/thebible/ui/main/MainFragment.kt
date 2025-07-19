@@ -197,6 +197,14 @@ class MainFragment : Fragment() {
         viewModel.verses.observe(viewLifecycleOwner) { verses ->
             verseAdapter.submitList(verses)
             applyTextSettings()
+            
+            // Scroll to target verse if specified
+            viewModel.targetVerse.value?.let { verse ->
+                if (verse > 0 && verse <= verses.size) {
+                    (binding.rvContent.layoutManager as? LinearLayoutManager)?.scrollToPosition(verse - 1)
+                    viewModel.clearTargetVerse()
+                }
+            }
         }
 
         viewModel.showEnglish.observe(viewLifecycleOwner) { showEnglish ->
@@ -306,6 +314,10 @@ class MainFragment : Fragment() {
         } else {
             false
         }
+    }
+    
+    fun navigateToVerse(book: String, chapter: Int, verse: Int) {
+        viewModel.jumpToVerse(book, chapter, verse)
     }
 
 

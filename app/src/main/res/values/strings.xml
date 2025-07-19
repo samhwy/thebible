@@ -24,4 +24,5 @@
     <string name="parchment">羊皮紙</string>
     <string name="darkgray">深灰</string>
     <string name="dark_mode">深色模式</string>
+    <string name="no_bookmarks">沒有書籤</string>
 </resources>

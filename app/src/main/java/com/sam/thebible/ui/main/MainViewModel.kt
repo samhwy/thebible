@@ -40,6 +40,9 @@ class MainViewModel @Inject constructor(
 
     private val _isSearchMode = MutableLiveData<Boolean>()
     val isSearchMode: LiveData<Boolean> = _isSearchMode
+    
+    private val _targetVerse = MutableLiveData<Int?>()
+    val targetVerse: MutableLiveData<Int?> = _targetVerse
 
     var lastBook: Book? = null
     var lastChapter: Int = 1
@@ -171,10 +174,15 @@ class MainViewModel @Inject constructor(
         _isSearchMode.value = false
     }
     
-    fun jumpToVerse(bookCode: String, chapter: Int) {
+    fun clearTargetVerse() {
+        _targetVerse.value = null
+    }
+    
+    fun jumpToVerse(bookCode: String, chapter: Int, verse: Int = 1) {
         _books.value?.find { it.code == bookCode }?.let { book ->
             selectBook(book, chapter)
             _isSearchMode.value = false
+            _targetVerse.value = verse
         }
     }
     

@@ -30,29 +30,40 @@ abstract class BibleDatabase : RoomDatabase() {
 
         fun getDatabase(context: Context): BibleDatabase {
             return INSTANCE ?: synchronized(this) {
-                val instance = Room.databaseBuilder(
+                // Check if database already exists
+                val dbFile = context.getDatabasePath("bible_database")
+                val dbExists = dbFile.exists()
+                
+                val builder = Room.databaseBuilder(
                     context.applicationContext,
                     BibleDatabase::class.java,
                     "bible_database"
-                ).createFromAsset("bible.db")
-                    .addCallback(object : RoomDatabase.Callback() {
-                        override fun onCreate(db: SupportSQLiteDatabase) {
-                            super.onCreate(db)
-                            // Create bookmarks table if it doesn't exist
-                            db.execSQL("""
-                                CREATE TABLE IF NOT EXISTS bookmarks (
-                                    id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                    book TEXT NOT NULL,
-                                    chapter INTEGER NOT NULL,
-                                    verse INTEGER NOT NULL,
-                                    selectedText TEXT NOT NULL,
-                                    notes TEXT DEFAULT '',
-                                    timestamp INTEGER NOT NULL
-                                )
-                            """.trimIndent())
-                        }
-                    })
-                    .fallbackToDestructiveMigration()
+                )
+                
+                // Only create from asset if database doesn't exist yet
+                if (!dbExists) {
+                    builder.createFromAsset("bible.db")
+                        .addCallback(object : RoomDatabase.Callback() {
+                            override fun onCreate(db: SupportSQLiteDatabase) {
+                                super.onCreate(db)
+                                // Create bookmarks table if it doesn't exist
+                                db.execSQL("""
+                                    CREATE TABLE IF NOT EXISTS bookmarks (
+                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
+                                        book TEXT NOT NULL,
+                                        chapter INTEGER NOT NULL,
+                                        verse INTEGER NOT NULL,
+                                        selectedText TEXT NOT NULL,
+                                        notes TEXT DEFAULT '',
+                                        timestamp INTEGER NOT NULL
+                                    )
+                                """.trimIndent())
+                            }
+                        })
+                }
+                
+                val instance = builder
+                   // .fallbackToDestructiveMigration() // Add this temporarily for testing()
                     .build()
                 INSTANCE = instance
                 instance
