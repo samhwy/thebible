@@ -44,16 +44,19 @@ class BookmarksFragment : Fragment() {
             onItemClick = { bookmark: Bookmark ->
                 // Handle bookmark click - navigate to the verse
                 (activity as? MainActivity)?.let { mainActivity ->
-                    (mainActivity.supportFragmentManager.findFragmentById(com.sam.thebible.R.id.nav_host_fragment_content_main) as? MainFragment)?.let { mainFragment ->
-                        mainFragment.navigateToVerse(
-                            bookmark.book,
-                            bookmark.chapter,
-                            bookmark.verse
-                        )
-                        Log.d("Bookmark clicked", bookmark.toString())
-                        // Return to main fragment
-                        parentFragmentManager.popBackStack()
-                    }
+                    // Pop back synchronously to restore the main fragment
+                    parentFragmentManager.popBackStackImmediate()
+                    // Now access the restored MainFragment via NavHostFragment
+                    val navHost = mainActivity.supportFragmentManager
+                        .findFragmentById(com.sam.thebible.R.id.nav_host_fragment_content_main) as? androidx.navigation.fragment.NavHostFragment
+                    val mainFragment = navHost?.childFragmentManager?.fragments?.firstOrNull() as? MainFragment
+
+                    mainFragment?.navigateToVerse(
+                        bookmark.book,
+                        bookmark.chapter,
+                        bookmark.verse
+                    )
+                    //parentFragmentManager.popBackStack()
                 }
             },
             onItemLongClick = { bookmark: Bookmark ->
@@ -78,7 +81,7 @@ class BookmarksFragment : Fragment() {
                 }
             }
         }
-        
+
         // Set up close button
         binding.btnClose.setOnClickListener {
             parentFragmentManager.popBackStack()

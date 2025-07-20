@@ -64,6 +64,7 @@ class MainViewModel @Inject constructor(
                 if (bookList.isNotEmpty()) {
                     var bookObj = bookList.firstOrNull { it.code == book }?: bookList.first()
                     Log.d("selectBook", "Checkpoint 1 load books: ${bookList.size}")
+                    // Thread.dumpStack()
                     selectBook(bookObj, chapter)
                 }
             } catch (e: Exception) {
@@ -179,7 +180,11 @@ class MainViewModel @Inject constructor(
     }
     
     fun jumpToVerse(bookCode: String, chapter: Int, verse: Int = 1) {
+
         _books.value?.find { it.code == bookCode }?.let { book ->
+            Log.d("jumpToVerse", "checkpoint 5 book: $bookCode, chapter: $chapter, verse: $verse")
+            lastBook=book
+            lastChapter = chapter
             selectBook(book, chapter)
             _isSearchMode.value = false
             _targetVerse.value = verse

@@ -22,6 +22,7 @@ import com.sam.thebible.utils.SettingsManager
 import dagger.hilt.android.AndroidEntryPoint
 import kotlin.math.abs
 import android.util.Log
+import kotlin.collections.firstOrNull
 
 @AndroidEntryPoint
 class MainFragment : Fragment() {
@@ -175,22 +176,49 @@ class MainFragment : Fragment() {
 
         viewModel.currentBook.observe(viewLifecycleOwner) { book ->
             book?.let {
-                settingsManager.lastBookCode = it.code
+                Log.d("MainFragment", "checkpoint 3 current book: $it")
+                if (!reloadPosition)
+                    settingsManager.lastBookCode = it.code
+
                 val mainActivity = activity as? MainActivity
                 val (bookSpinner, _) = mainActivity?.getToolbarSpinners() ?: return@let
-                bookSpinner?.setSelection(getBookPosition(it))
+                if (!reloadPosition)
+                   bookSpinner?.setSelection(getBookPosition(it))
+                else {
+                   bookSpinner?.setSelection(
+                       viewModel.books.value?.firstOrNull { it.code == settingsManager.lastBookCode }?.let {
+                           getBookPosition(it)
+                       }?:0
+                    )
+                }
                 setupChapterSpinner(it)
             }
         }
 
         viewModel.currentChapter.observe(viewLifecycleOwner) { chapter ->
-            Log.d("MainActivity", "checkpoint 4 current chapter: $chapter")
+
             //Thread.dumpStack()
-            settingsManager.lastChapter = chapter
+
+            if (!reloadPosition)
+               settingsManager.lastChapter = chapter
+            val loadChapter = settingsManager.lastChapter
+            Log.d("MainFragment", "checkpoint 4 current chapter: $loadChapter")
+
             val mainActivity = activity as? MainActivity
             val (_, chapterSpinner) = mainActivity?.getToolbarSpinners() ?: return@observe
-            if (chapterSpinner?.adapter != null && chapter > 0) {
-                chapterSpinner.setSelection(chapter - 1)
+            if (chapterSpinner?.adapter != null && loadChapter > 0) {
+                // Make sure we don't try to select a chapter that doesn't exist in the adapter
+                val adapterCount = chapterSpinner.adapter.count
+                if (loadChapter <= adapterCount) {
+                    chapterSpinner.setSelection(loadChapter - 1)
+                } else {
+                    // If the saved chapter is out of bounds, select the last available chapter
+                    if (adapterCount > 0) {
+                        chapterSpinner.setSelection(adapterCount - 1)
+                        // Update the saved chapter to match what we're displaying
+                        settingsManager.lastChapter = adapterCount
+                    }
+                }
             }
         }
 
@@ -266,6 +294,12 @@ class MainFragment : Fragment() {
             if (lastChapter in 1..chapterCount) {
                 chapterSpinner?.setSelection(lastChapter - 1)
                 viewModel.selectChapter(lastChapter)
+            } else if (lastChapter > chapterCount && chapterCount > 0) {
+                // If saved chapter is out of bounds, use the last available chapter
+                chapterSpinner?.setSelection(chapterCount - 1)
+                viewModel.selectChapter(chapterCount)
+                // Update the saved chapter
+                settingsManager.lastChapter = chapterCount
             }
         }
     }
@@ -317,6 +351,10 @@ class MainFragment : Fragment() {
     }
     
     fun navigateToVerse(book: String, chapter: Int, verse: Int) {
+        settingsManager.lastBookCode = book
+        settingsManager.lastChapter = chapter
+        settingsManager.saveCurrentPosition(book, chapter)
+        reloadPosition = true
         viewModel.jumpToVerse(book, chapter, verse)
     }
 

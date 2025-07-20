@@ -6,7 +6,7 @@
     android:layout_height="wrap_content"
     android:padding="12dp">
 
-    <!-- 第一行：书名 章:节 | 经文内容 -->
+    <!-- 第一行：书名 章:节 | 日期 -->
     <TextView
         android:id="@+id/tvBookChapterVerse"
         android:layout_width="wrap_content"
@@ -14,12 +14,28 @@
         android:text="Genesis 1:1"
         android:textStyle="bold"
         android:textColor="?attr/colorOnBackground"
+        android:textSize="16sp"
         android:maxLines="1"
+        android:foreground="?attr/selectableItemBackground"
+        android:autoLink="none"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintEnd_toStartOf="@id/tvVerseContent"
-        app:layout_constraintHorizontal_chainStyle="packed"/>
+        app:layout_constraintTop_toTopOf="parent"/>
 
+    <TextView
+        android:id="@+id/tvBookmarkDate"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="2024-06-01"
+        android:textColor="?attr/colorOnBackground"
+        android:textSize="12sp"
+        android:maxLines="1"
+        android:ellipsize="end"
+        app:layout_constraintStart_toEndOf="@id/tvBookChapterVerse"
+        app:layout_constraintTop_toTopOf="parent"
+        app:layout_constraintBaseline_toBaselineOf="@id/tvBookChapterVerse"
+        android:layout_marginStart="8dp"/>
+
+    <!-- 第二行：经文内容 -->
     <TextView
         android:id="@+id/tvVerseContent"
         android:layout_width="0dp"
@@ -29,12 +45,12 @@
         android:maxLines="1"
         android:textColor="?attr/colorOnBackground"
         android:textSize="14sp"
-        app:layout_constraintStart_toEndOf="@id/tvBookChapterVerse"
+        app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintHorizontal_bias="1.0"/>
+        app:layout_constraintTop_toBottomOf="@id/tvBookChapterVerse"
+        android:layout_marginTop="2dp"/>
 
-    <!-- 第二行：笔记图标 | 笔记内容 -->
+    <!-- 第三行：笔记图标 | 笔记内容 -->
     <ImageView
         android:id="@+id/ivNoteIcon"
         android:layout_width="20dp"
@@ -42,7 +58,7 @@
         android:src="@android:drawable/ic_menu_edit"
         android:contentDescription="Note"
         app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintTop_toBottomOf="@id/tvBookChapterVerse"
+        app:layout_constraintTop_toBottomOf="@id/tvVerseContent"
         app:layout_constraintBottom_toBottomOf="parent"
         app:tint="?attr/colorPrimary" />
 

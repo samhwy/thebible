@@ -9,4 +9,5 @@
     <color name="dark_gray">#FF3F3F3F</color>
     <color name="darker_gray">#FF1A1A1A</color>
     <color name="menu_icon_color">#FFFFFF</color>
+    <color name="purple_700">#FF6200EE</color>
 </resources>

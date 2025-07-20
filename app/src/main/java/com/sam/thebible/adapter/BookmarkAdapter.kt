@@ -9,6 +9,8 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.sam.thebible.R
 import com.sam.thebible.data.model.Bookmark
+import java.text.SimpleDateFormat
+import java.util.*
 
 class BookmarkAdapter(
     private val onItemClick: (Bookmark) -> Unit,
@@ -29,16 +31,36 @@ class BookmarkAdapter(
     inner class BookmarkViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
         fun bind(bookmark: Bookmark) {
             val tvBookChapterVerse = itemView.findViewById<TextView>(R.id.tvBookChapterVerse)
+            val tvBookmarkDate = itemView.findViewById<TextView>(R.id.tvBookmarkDate)
             val tvVerseContent = itemView.findViewById<TextView>(R.id.tvVerseContent)
             val tvNoteContent = itemView.findViewById<TextView>(R.id.tvNoteContent)
 
             tvBookChapterVerse.text = "${bookmark.book} ${bookmark.chapter}:${bookmark.verse}"
+
+            // 设置下划线和超链接颜色
+            tvBookChapterVerse.paint.isUnderlineText = true
+            // tvBookChapterVerse.setTextColor(itemView.context.getColor(R.color.purple_700))
+
+            // 格式化日期
+            val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
+            val dateStr = bookmark.timestamp.let { dateFormat.format(Date(it*1000)) } ?: ""
+            tvBookmarkDate.text = dateStr
+
             tvVerseContent.text = bookmark.selectedText
             tvNoteContent.text = bookmark.notes ?: ""
-            itemView.setOnClickListener { onItemClick(bookmark) }
+
+            // 整个item点击
+            itemView.setOnClickListener {
+                onItemClick(bookmark)
+            }
+            // 长按
             itemView.setOnLongClickListener {
                 onItemLongClick(bookmark)
                 true
+            }
+            // 书名章节点击（超链接）
+            tvBookChapterVerse.setOnClickListener {
+                onItemClick(bookmark)
             }
         }
     }
