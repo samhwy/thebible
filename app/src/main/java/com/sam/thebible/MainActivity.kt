@@ -71,6 +71,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                     val fragment = getCurrentMainFragment()
                     if (fragment != null && fragment.exitSearchMode()) {
                         // Search mode was exited, stay in app
+                    } else if (fragment != null && fragment.exitBookmarkMode()) {
+                        // Bookmark mode was exited, stay in app
                     } else {
                         finish()
                     }
@@ -232,10 +234,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun showBookmarksFragment() {
-        supportFragmentManager.beginTransaction()
-            .replace(R.id.nav_host_fragment_content_main, BookmarksFragment())
-            .addToBackStack(null)
-            .commit()
+        // Instead of replacing with BookmarksFragment, use the MainFragment to display bookmarks
+        val mainFragment = getCurrentMainFragment()
+        if (mainFragment != null) {
+            mainFragment.loadBookmarks()
+        } else {
+            // Fallback to old behavior if MainFragment is not available
+            supportFragmentManager.beginTransaction()
+                .replace(R.id.nav_host_fragment_content_main, BookmarksFragment())
+                .addToBackStack(null)
+                .commit()
+        }
     }
 
     private fun setupDrawerHeader() {

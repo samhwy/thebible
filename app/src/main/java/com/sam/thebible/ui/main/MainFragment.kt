@@ -13,8 +13,10 @@ import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.LinearLayoutManager
 import com.sam.thebible.MainActivity
 import com.sam.thebible.R
+import com.sam.thebible.adapter.MainBookmarkAdapter
 import com.sam.thebible.adapter.SearchResultAdapter
 import com.sam.thebible.adapter.VerseAdapter
+import com.sam.thebible.data.model.Bookmark
 import com.sam.thebible.databinding.FragmentMainBinding
 import com.sam.thebible.data.model.Book
 import com.sam.thebible.data.model.Verse
@@ -33,6 +35,7 @@ class MainFragment : Fragment() {
     val viewModel: MainViewModel by viewModels()
     private lateinit var verseAdapter: VerseAdapter
     private lateinit var searchResultAdapter: SearchResultAdapter
+    private lateinit var bookmarkAdapter: MainBookmarkAdapter
     private lateinit var settingsManager: SettingsManager
     private lateinit var gestureDetector: GestureDetector
     private var currentFontSize = 16f
@@ -124,12 +127,24 @@ class MainFragment : Fragment() {
     private fun setupRecyclerView() {
         verseAdapter = VerseAdapter()
         searchResultAdapter = SearchResultAdapter()
+        bookmarkAdapter = MainBookmarkAdapter()
+        
         searchResultAdapter.setOnItemClickListener { searchResult ->
             viewModel.jumpToVerse(searchResult.book, searchResult.chapter)
         }
+        
         verseAdapter.setOnTextSelectedListener { verse, selectedText ->
             showBookmarkDialog(verse, selectedText)
         }
+        
+        bookmarkAdapter.setOnItemClickListener { bookmark ->
+            viewModel.jumpToVerse(bookmark.book, bookmark.chapter, bookmark.verse)
+        }
+        
+        bookmarkAdapter.setOnItemLongClickListener { bookmark ->
+            showBookmarkOptionsDialog(bookmark)
+        }
+        
         binding.rvContent.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = verseAdapter
@@ -247,9 +262,26 @@ class MainFragment : Fragment() {
         viewModel.isSearchMode.observe(viewLifecycleOwner) { isSearchMode ->
             if (isSearchMode) {
                 binding.rvContent.adapter = searchResultAdapter
+            } else if (viewModel.isBookmarkMode.value == true) {
+                binding.rvContent.adapter = bookmarkAdapter
             } else {
                 binding.rvContent.adapter = verseAdapter
             }
+        }
+        
+        viewModel.isBookmarkMode.observe(viewLifecycleOwner) { isBookmarkMode ->
+            if (isBookmarkMode) {
+                binding.rvContent.adapter = bookmarkAdapter
+            } else if (viewModel.isSearchMode.value == true) {
+                binding.rvContent.adapter = searchResultAdapter
+            } else {
+                binding.rvContent.adapter = verseAdapter
+            }
+        }
+        
+        viewModel.bookmarks.observe(viewLifecycleOwner) { bookmarks ->
+            bookmarkAdapter.submitList(bookmarks)
+            bookmarkAdapter.updateTextSettings(currentFontSize, currentFontColor)
         }
     }
 
@@ -350,6 +382,19 @@ class MainFragment : Fragment() {
         }
     }
     
+    fun exitBookmarkMode(): Boolean {
+        return if (viewModel.isBookmarkMode.value == true) {
+            viewModel.exitBookmarkMode()
+            true
+        } else {
+            false
+        }
+    }
+    
+    fun loadBookmarks() {
+        viewModel.loadBookmarks()
+    }
+    
     fun navigateToVerse(book: String, chapter: Int, verse: Int) {
         settingsManager.lastBookCode = book
         settingsManager.lastChapter = chapter
@@ -379,6 +424,7 @@ class MainFragment : Fragment() {
         binding.rvContent.setBackgroundColor(currentBackgroundColor)
         verseAdapter.updateTextSettings(currentFontSize, currentFontColor)
         searchResultAdapter.updateTextSettings(currentFontSize, currentFontColor)
+        bookmarkAdapter.updateTextSettings(currentFontSize, currentFontColor)
     }
 
     private fun getBookPosition(book: Book): Int {
@@ -414,6 +460,61 @@ class MainFragment : Fragment() {
         }
         
         dialog.show()
+    }
+    
+    private fun showBookmarkOptionsDialog(bookmark: Bookmark) {
+        val options = arrayOf("檢視備註", "编緝備註", "删除書籤")
+        android.app.AlertDialog.Builder(requireContext())
+            .setTitle("操作書籤")
+            .setItems(options) { _, which ->
+                when (which) {
+                    0 -> viewNoteDialog(bookmark)
+                    1 -> showEditNoteDialog(bookmark)
+                    2 -> confirmDeleteBookmark(bookmark)
+                }
+            }
+            .show()
+    }
+    
+    private fun showEditNoteDialog(bookmark: Bookmark) {
+        val context = requireContext()
+        val editText = android.widget.EditText(context)
+        editText.setText(bookmark.notes ?: "")
+        editText.setSelection(editText.text.length)
+
+        val dialog = android.app.AlertDialog.Builder(context)
+            .setTitle("编辑笔记")
+            .setView(editText)
+            .setNegativeButton("取消", null)
+            .setPositiveButton("保存") { _, _ ->
+                val newNote = editText.text.toString()
+                if (newNote != bookmark.notes) {
+                    val updated = bookmark.copy(notes = newNote)
+                    viewModel.updateBookmark(updated)
+                }
+            }
+            .create()
+        dialog.show()
+    }
+
+    private fun confirmDeleteBookmark(bookmark: Bookmark) {
+        android.app.AlertDialog.Builder(requireContext())
+            .setTitle("删除書籤")
+            .setMessage("确定要删除該書籤嗎？")
+            .setNegativeButton("取消", null)
+            .setPositiveButton("删除") { _, _ ->
+                viewModel.deleteBookmark(bookmark)
+                android.widget.Toast.makeText(requireContext(), "書籤已删除", android.widget.Toast.LENGTH_SHORT).show()
+            }
+            .show()
+    }
+
+    private fun viewNoteDialog(bookmark: Bookmark) {
+        android.app.AlertDialog.Builder(requireContext())
+            .setTitle("備註")
+            .setMessage(bookmark.notes)
+            .setPositiveButton("關閉", null)
+            .show()
     }
 
     override fun onDestroyView() {

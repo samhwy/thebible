@@ -41,6 +41,12 @@ class MainViewModel @Inject constructor(
     private val _isSearchMode = MutableLiveData<Boolean>()
     val isSearchMode: LiveData<Boolean> = _isSearchMode
     
+    private val _isBookmarkMode = MutableLiveData<Boolean>()
+    val isBookmarkMode: LiveData<Boolean> = _isBookmarkMode
+    
+    private val _bookmarks = MutableLiveData<List<com.sam.thebible.data.model.Bookmark>>()
+    val bookmarks: LiveData<List<com.sam.thebible.data.model.Bookmark>> = _bookmarks
+    
     private val _targetVerse = MutableLiveData<Int?>()
     val targetVerse: MutableLiveData<Int?> = _targetVerse
 
@@ -50,6 +56,7 @@ class MainViewModel @Inject constructor(
     init {
         _showEnglish.value = true
         _isSearchMode.value = false
+        _isBookmarkMode.value = false
         //loadBooks()
     }
 
@@ -145,6 +152,7 @@ class MainViewModel @Inject constructor(
                 val verseList = repository.getChapter(bookCode, chapter)
                 _verses.value = verseList
                 _isSearchMode.value = false
+                _isBookmarkMode.value = false
             } catch (e: Exception) {
                 // Handle error
                 println("Error loading chapter: ${e.message}")
@@ -175,6 +183,10 @@ class MainViewModel @Inject constructor(
         _isSearchMode.value = false
     }
     
+    fun exitBookmarkMode() {
+        _isBookmarkMode.value = false
+    }
+    
     fun clearTargetVerse() {
         _targetVerse.value = null
     }
@@ -187,6 +199,7 @@ class MainViewModel @Inject constructor(
             lastChapter = chapter
             selectBook(book, chapter)
             _isSearchMode.value = false
+            _isBookmarkMode.value = false
             _targetVerse.value = verse
         }
     }
@@ -204,6 +217,43 @@ class MainViewModel @Inject constructor(
                 repository.addBookmark(bookmark)
             } catch (e: Exception) {
                 println("Error adding bookmark: ${e.message}")
+            }
+        }
+    }
+    
+    fun loadBookmarks() {
+        viewModelScope.launch {
+            try {
+                val bookmarksList = repository.getAllBookmarks()
+                _bookmarks.value = bookmarksList
+                _isBookmarkMode.value = true
+                _isSearchMode.value = false
+            } catch (e: Exception) {
+                println("Error loading bookmarks: ${e.message}")
+            }
+        }
+    }
+    
+    fun updateBookmark(bookmark: com.sam.thebible.data.model.Bookmark) {
+        viewModelScope.launch {
+            try {
+                repository.updateBookmark(bookmark)
+                // Refresh the bookmarks list
+                loadBookmarks()
+            } catch (e: Exception) {
+                println("Error updating bookmark: ${e.message}")
+            }
+        }
+    }
+    
+    fun deleteBookmark(bookmark: com.sam.thebible.data.model.Bookmark) {
+        viewModelScope.launch {
+            try {
+                repository.deleteBookmark(bookmark)
+                // Refresh the bookmarks list
+                loadBookmarks()
+            } catch (e: Exception) {
+                println("Error deleting bookmark: ${e.message}")
             }
         }
     }
