@@ -3,6 +3,7 @@ package com.sam.thebible.adapter
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
+import android.widget.ImageView
 import android.widget.TextView
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
@@ -12,10 +13,23 @@ import com.sam.thebible.data.model.Bookmark
 import java.text.SimpleDateFormat
 import java.util.*
 
-class BookmarkAdapter(
-    private val onItemClick: (Bookmark) -> Unit,
-    private val onItemLongClick: (Bookmark) -> Unit
-) : ListAdapter<Bookmark, BookmarkAdapter.BookmarkViewHolder>(BookmarkDiffCallback) {
+class BookmarkAdapter : ListAdapter<Bookmark, BookmarkAdapter.BookmarkViewHolder>(BookmarkDiffCallback) {
+
+    private var onItemClickListener: ((Bookmark) -> Unit)? = null
+    private var onItemLongClickListener: ((Bookmark) -> Unit)? = null
+    private var onEditNoteClickListener: ((Bookmark) -> Unit)? = null
+
+    fun setOnItemClickListener(listener: (Bookmark) -> Unit) {
+        onItemClickListener = listener
+    }
+
+    fun setOnItemLongClickListener(listener: (Bookmark) -> Unit) {
+        onItemLongClickListener = listener
+    }
+
+    fun setOnEditNoteClickListener(listener: (Bookmark) -> Unit) {
+        onEditNoteClickListener = listener
+    }
 
     override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookmarkViewHolder {
         val view = LayoutInflater.from(parent.context)
@@ -34,12 +48,12 @@ class BookmarkAdapter(
             val tvBookmarkDate = itemView.findViewById<TextView>(R.id.tvBookmarkDate)
             val tvVerseContent = itemView.findViewById<TextView>(R.id.tvVerseContent)
             val tvNoteContent = itemView.findViewById<TextView>(R.id.tvNoteContent)
+            val ivNoteIcon = itemView.findViewById<ImageView>(R.id.ivNoteIcon)
 
             tvBookChapterVerse.text = "${bookmark.book} ${bookmark.chapter}:${bookmark.verse}"
 
             // 设置下划线和超链接颜色
             tvBookChapterVerse.paint.isUnderlineText = true
-            // tvBookChapterVerse.setTextColor(itemView.context.getColor(R.color.purple_700))
 
             // 格式化日期
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
@@ -51,16 +65,20 @@ class BookmarkAdapter(
 
             // 整个item点击
             itemView.setOnClickListener {
-                onItemClick(bookmark)
+                onItemClickListener?.invoke(bookmark)
             }
             // 长按
             itemView.setOnLongClickListener {
-                onItemLongClick(bookmark)
+                onItemLongClickListener?.invoke(bookmark)
                 true
             }
             // 书名章节点击（超链接）
             tvBookChapterVerse.setOnClickListener {
-                onItemClick(bookmark)
+                onItemClickListener?.invoke(bookmark)
+            }
+            // 笔记编辑图标点击
+            ivNoteIcon.setOnClickListener {
+                onEditNoteClickListener?.invoke(bookmark)
             }
         }
     }

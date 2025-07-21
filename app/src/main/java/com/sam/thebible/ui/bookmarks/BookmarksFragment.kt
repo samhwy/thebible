@@ -26,6 +26,7 @@ class BookmarksFragment : Fragment() {
     private var _binding: FragmentBookmarksBinding? = null
     private val binding get() = _binding!!
     private val viewModel: BookmarksViewModel by viewModels()
+    private lateinit var bookmarkAdapter: BookmarkAdapter
 
     override fun onCreateView(
         inflater: LayoutInflater,
@@ -39,34 +40,31 @@ class BookmarksFragment : Fragment() {
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
 
-        // BookmarkAdapter 需支持 onItemLongClick 回调
-        val adapter = BookmarkAdapter(
-            onItemClick = { bookmark: Bookmark ->
-                // Handle bookmark click - navigate to the verse
-                (activity as? MainActivity)?.let { mainActivity ->
-                    // Pop back synchronously to restore the main fragment
-                    parentFragmentManager.popBackStackImmediate()
-                    // Now access the restored MainFragment via NavHostFragment
-                    val navHost = mainActivity.supportFragmentManager
-                        .findFragmentById(com.sam.thebible.R.id.nav_host_fragment_content_main) as? androidx.navigation.fragment.NavHostFragment
-                    val mainFragment = navHost?.childFragmentManager?.fragments?.firstOrNull() as? MainFragment
+        bookmarkAdapter = BookmarkAdapter()
+        bookmarkAdapter.setOnItemClickListener { bookmark: Bookmark ->
+            (activity as? MainActivity)?.let { mainActivity ->
+                parentFragmentManager.popBackStackImmediate()
+                val navHost = mainActivity.supportFragmentManager
+                    .findFragmentById(com.sam.thebible.R.id.nav_host_fragment_content_main) as? androidx.navigation.fragment.NavHostFragment
+                val mainFragment = navHost?.childFragmentManager?.fragments?.firstOrNull() as? MainFragment
 
-                    mainFragment?.navigateToVerse(
-                        bookmark.book,
-                        bookmark.chapter,
-                        bookmark.verse
-                    )
-                    //parentFragmentManager.popBackStack()
-                }
-            },
-            onItemLongClick = { bookmark: Bookmark ->
-                showBookmarkOptionsDialog(bookmark)
+                mainFragment?.navigateToVerse(
+                    bookmark.book,
+                    bookmark.chapter,
+                    bookmark.verse
+                )
             }
-        )
+        }
+        bookmarkAdapter.setOnItemLongClickListener { bookmark: Bookmark ->
+            showBookmarkOptionsDialog(bookmark)
+        }
+        bookmarkAdapter.setOnEditNoteClickListener { bookmark ->
+            showEditNoteDialog(bookmark)
+        }
 
         binding.rvBookmarks.apply {
             layoutManager = LinearLayoutManager(context)
-            this.adapter = adapter
+            this.adapter = bookmarkAdapter
         }
 
         lifecycleScope.launch {
@@ -77,7 +75,7 @@ class BookmarksFragment : Fragment() {
                 } else {
                     binding.tvEmpty.visibility = View.GONE
                     binding.rvBookmarks.visibility = View.VISIBLE
-                    adapter.submitList(bookmarks)
+                    bookmarkAdapter.submitList(bookmarks)
                 }
             }
         }
@@ -108,21 +106,26 @@ class BookmarksFragment : Fragment() {
     }
 
     private fun showEditNoteDialog(bookmark: Bookmark) {
-        val editText = EditText(requireContext())
+        val context = requireContext()
+        val editText = EditText(context)
         editText.setText(bookmark.notes ?: "")
-        AlertDialog.Builder(requireContext())
-            .setTitle("編輯備註")
+        editText.setSelection(editText.text.length)
+
+        val dialog = AlertDialog.Builder(context)
+            .setTitle("编辑笔记")
             .setView(editText)
             .setNegativeButton("取消", null)
             .setPositiveButton("保存") { _, _ ->
                 val newNote = editText.text.toString()
-                val updatedBookmark = bookmark.copy(notes = newNote)
-                lifecycleScope.launch {
-                    viewModel.updateBookmark(updatedBookmark)
-                    Toast.makeText(requireContext(), "備注已保存", Toast.LENGTH_SHORT).show()
+                if (newNote != bookmark.notes) {
+                    val updated = bookmark.copy(notes = newNote)
+                    viewLifecycleOwner.lifecycleScope.launch {
+                        viewModel.updateBookmark(updated)
+                    }
                 }
             }
-            .show()
+            .create()
+        dialog.show()
     }
 
     private fun confirmDeleteBookmark(bookmark: Bookmark) {
@@ -148,13 +151,3 @@ class BookmarksFragment : Fragment() {
     }
 }
 
-
-
-private fun MainFragment.navigateToVerse(
-    book: String,
-    chapter: Int,
-    verse: Int
-) {
-    // Use the viewModel to navigate to the specified verse
-    viewModel.jumpToVerse(book, chapter, verse)
-}
