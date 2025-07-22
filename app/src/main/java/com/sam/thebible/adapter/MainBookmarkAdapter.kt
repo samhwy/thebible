@@ -1,6 +1,7 @@
 package com.sam.thebible.adapter
 
 import android.graphics.Color
+import com.sam.thebible.data.database.dao.BookDao
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -12,7 +13,6 @@ import java.text.SimpleDateFormat
 import java.util.*
 
 class MainBookmarkAdapter : ListAdapter<Bookmark, MainBookmarkAdapter.ViewHolder>(DiffCallback()) {
-    
     private var fontSize: Float = 16f
     private var fontColor: Int = Color.BLACK
     private var onItemClickListener: ((Bookmark) -> Unit)? = null
@@ -50,29 +50,28 @@ class MainBookmarkAdapter : ListAdapter<Bookmark, MainBookmarkAdapter.ViewHolder
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val dateStr = bookmark.timestamp.let { dateFormat.format(Date(it*1000)) } ?: ""
 
-            binding.tvBookChapter.text = "${bookmark.book} ${bookmark.chapter}:${bookmark.verse} $dateStr"
-            
-            val content = bookmark.selectedText
-            val notes = bookmark.notes
+            // 判断 selectedText 是否为英文（包含英文字母则认为是英文）
+//            val isEnglish = bookmark.selectedText?.any { it.isLetter() && it.code < 128 } == true
+//            val bookName = if (isEnglish) bookmark.bookEn ?: bookmark.book else bookmark.book
 
-            // Format the content with notes if available
-            val displayText = if (!notes.isNullOrEmpty()) {
-                "$content\n備註: $notes"
-            } else {
-                content
-            }
-            
-            binding.tvContent.text = displayText
-            
+            binding.tvBookChapter.text = "${bookmark.book} ${bookmark.chapter}:${bookmark.verse} ($dateStr)"
+
+            binding.tvContent.text = bookmark.selectedText
+            binding.tvNotes.text = "Notes: ${bookmark.notes}"
+
             binding.tvBookChapter.textSize = fontSize - 2f
-            binding.tvContent.textSize = fontSize
+            binding.tvContent.textSize = fontSize -3f
+            binding.tvNotes.textSize = fontSize -3f
             binding.tvBookChapter.setTextColor(fontColor)
             binding.tvContent.setTextColor(fontColor)
-            
+            binding.tvNotes.setTextColor(fontColor)
+            binding.tvContent.maxLines = 1
+            binding.tvContent.ellipsize = android.text.TextUtils.TruncateAt.END
+
             binding.root.setOnClickListener {
                 onItemClickListener?.invoke(bookmark)
             }
-            
+
             binding.root.setOnLongClickListener {
                 onItemLongClickListener?.invoke(bookmark)
                 true

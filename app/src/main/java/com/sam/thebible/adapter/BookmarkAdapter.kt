@@ -13,11 +13,14 @@ import com.sam.thebible.data.model.Bookmark
 import java.text.SimpleDateFormat
 import java.util.*
 
-class BookmarkAdapter : ListAdapter<Bookmark, BookmarkAdapter.BookmarkViewHolder>(BookmarkDiffCallback) {
+class BookmarkAdapter : ListAdapter<Bookmark, RecyclerView.ViewHolder>(BookmarkDiffCallback) {
+    private val VIEW_TYPE_BOOKMARK = 0
+    private val VIEW_TYPE_CLOSE = 1
 
     private var onItemClickListener: ((Bookmark) -> Unit)? = null
     private var onItemLongClickListener: ((Bookmark) -> Unit)? = null
     private var onEditNoteClickListener: ((Bookmark) -> Unit)? = null
+    private var onCloseClickListener: (() -> Unit)? = null
 
     fun setOnItemClickListener(listener: (Bookmark) -> Unit) {
         onItemClickListener = listener
@@ -30,16 +33,46 @@ class BookmarkAdapter : ListAdapter<Bookmark, BookmarkAdapter.BookmarkViewHolder
     fun setOnEditNoteClickListener(listener: (Bookmark) -> Unit) {
         onEditNoteClickListener = listener
     }
-
-    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): BookmarkViewHolder {
-        val view = LayoutInflater.from(parent.context)
-            .inflate(R.layout.item_bookmark, parent, false)
-        return BookmarkViewHolder(view)
+    
+    fun setOnCloseClickListener(listener: () -> Unit) {
+        onCloseClickListener = listener
     }
 
-    override fun onBindViewHolder(holder: BookmarkViewHolder, position: Int) {
-        val bookmark = getItem(position)
-        holder.bind(bookmark)
+    override fun getItemViewType(position: Int): Int {
+        return if (position < currentList.size) VIEW_TYPE_BOOKMARK else VIEW_TYPE_CLOSE
+    }
+    
+    override fun getItemCount(): Int {
+        return super.getItemCount() + 1 // Add 1 for the close button
+    }
+    
+    override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): RecyclerView.ViewHolder {
+        return when (viewType) {
+            VIEW_TYPE_BOOKMARK -> {
+                val view = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.item_bookmark, parent, false)
+                BookmarkViewHolder(view)
+            }
+            else -> {
+                val view = LayoutInflater.from(parent.context)
+                    .inflate(R.layout.item_bookmark_close, parent, false)
+                CloseViewHolder(view)
+            }
+        }
+    }
+
+    override fun onBindViewHolder(holder: RecyclerView.ViewHolder, position: Int) {
+        when (holder) {
+            is BookmarkViewHolder -> {
+                if (position < currentList.size) {
+                    val bookmark = getItem(position)
+                    holder.bind(bookmark)
+                }
+            }
+            is CloseViewHolder -> {
+                holder.bind()
+            }
+        }
     }
 
     inner class BookmarkViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
@@ -83,6 +116,15 @@ class BookmarkAdapter : ListAdapter<Bookmark, BookmarkAdapter.BookmarkViewHolder
         }
     }
 
+    inner class CloseViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        fun bind() {
+            val tvCloseBookmarks = itemView.findViewById<TextView>(R.id.tvCloseBookmarks)
+            tvCloseBookmarks.setOnClickListener {
+                onCloseClickListener?.invoke()
+            }
+        }
+    }
+    
     companion object BookmarkDiffCallback : DiffUtil.ItemCallback<Bookmark>() {
         override fun areItemsTheSame(oldItem: Bookmark, newItem: Bookmark): Boolean {
             return oldItem.id == newItem.id

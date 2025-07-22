@@ -345,29 +345,22 @@ class MainFragment : Fragment() {
         addFlipAnimation(false)
         viewModel.nextChapter()
     }
-    
+
     private fun addFlipAnimation(isReverse: Boolean) {
-        val pivotX = if (isReverse) binding.rvContent.width.toFloat() else 0f
-        binding.rvContent.pivotX = pivotX
-        binding.rvContent.pivotY = binding.rvContent.height / 2f
-        
+        // Calculate the translation distance (screen width)
+        val screenWidth = binding.rvContent.width.toFloat()
+
+        // First, move the view off-screen
+        binding.rvContent.alpha = 1f
+        binding.rvContent.translationX = if (isReverse) -screenWidth else screenWidth
+
+        // Then animate it back to the center
         binding.rvContent.animate()
-            .rotationY(if (isReverse) 90f else -90f)
-            .scaleX(0.8f)
-            .alpha(0.7f)
-            .setDuration(200)
-            .withEndAction {
-                binding.rvContent.rotationY = if (isReverse) -90f else 90f
-                binding.rvContent.animate()
-                    .rotationY(0f)
-                    .scaleX(1f)
-                    .alpha(1f)
-                    .setDuration(200)
-                    .start()
-            }
+            .translationX(0f)
+            .alpha(1f)
+            .setDuration(250)
             .start()
     }
-
     fun onSearch(keyword: String) {
         searchResultAdapter.setSearchKeyword(keyword)
         viewModel.search(keyword)

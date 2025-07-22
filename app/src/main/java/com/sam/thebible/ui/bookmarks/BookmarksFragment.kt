@@ -61,6 +61,9 @@ class BookmarksFragment : Fragment() {
         bookmarkAdapter.setOnEditNoteClickListener { bookmark ->
             showEditNoteDialog(bookmark)
         }
+        bookmarkAdapter.setOnCloseClickListener {
+            parentFragmentManager.popBackStack()
+        }
 
         binding.rvBookmarks.apply {
             layoutManager = LinearLayoutManager(context)

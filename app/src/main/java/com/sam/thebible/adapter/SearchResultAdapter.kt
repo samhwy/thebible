@@ -68,6 +68,12 @@ class SearchResultAdapter : ListAdapter<SearchResult, SearchResultAdapter.ViewHo
             binding.root.setOnClickListener {
                 onItemClickListener?.invoke(result)
             }
+
+            // 关闭按钮处理
+            binding.tvClose.setOnClickListener {
+                val activity = binding.root.context as? androidx.fragment.app.FragmentActivity
+                activity?.supportFragmentManager?.popBackStack()
+            }
         }
         
         private fun highlightKeyword(content: String, keyword: String): SpannableString {

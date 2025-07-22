@@ -49,13 +49,13 @@ abstract class BibleDatabase : RoomDatabase() {
                                 // Create bookmarks table if it doesn't exist
                                 db.execSQL("""
                                     CREATE TABLE IF NOT EXISTS bookmarks (
-                                        id INTEGER PRIMARY KEY AUTOINCREMENT,
-                                        book TEXT NOT NULL,
-                                        chapter INTEGER NOT NULL,
-                                        verse INTEGER NOT NULL,
-                                        selectedText TEXT NOT NULL,
-                                        notes TEXT DEFAULT '',
-                                        timestamp INTEGER NOT NULL
+                                        `id`	INTEGER NOT NULL PRIMARY KEY AUTOINCREMENT,
+                                        `book`	TEXT NOT NULL,
+                                        `chapter`	INTEGER NOT NULL,
+                                        `verse`	INTEGER NOT NULL,
+                                        `selectedText`	TEXT NOT NULL,
+                                        `notes`	TEXT DEFAULT '',
+                                        `timestamp`	INTEGER NOT NULL DEFAULT (strftime('%s','now'))
                                     )
                                 """.trimIndent())
                             }
