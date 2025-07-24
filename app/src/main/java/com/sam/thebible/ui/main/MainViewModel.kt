@@ -1,5 +1,6 @@
 package com.sam.thebible.ui.main
 
+import android.R
 import android.util.Log
 import androidx.lifecycle.LiveData
 import androidx.lifecycle.MutableLiveData
@@ -146,7 +147,7 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    private fun loadChapter(bookCode: String, chapter: Int) {
+     fun loadChapter(bookCode: String, chapter: Int) {
         viewModelScope.launch {
             try {
                 val verseList = repository.getChapter(bookCode, chapter)
@@ -203,7 +204,16 @@ class MainViewModel @Inject constructor(
             _targetVerse.value = verse
         }
     }
-    
+
+    fun backToLastBkChapter() {
+
+        lastBook?.let { book ->
+            lastChapter.let { chapter ->
+                loadChapter(book.code, chapter)
+            }
+        }
+    }
+
     fun addBookmark(book: String, chapter: Int, verse: Int, selectedText: String, notes: String) {
         viewModelScope.launch {
             try {

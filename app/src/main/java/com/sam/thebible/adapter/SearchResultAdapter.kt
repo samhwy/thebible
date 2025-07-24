@@ -4,20 +4,27 @@ import android.graphics.Color
 import android.text.Spannable
 import android.text.SpannableString
 import android.text.style.BackgroundColorSpan
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
+import androidx.fragment.app.viewModels
 import androidx.recyclerview.widget.DiffUtil
 import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
+import com.sam.thebible.R
 import com.sam.thebible.data.model.SearchResult
 import com.sam.thebible.databinding.ItemSearchResultBinding
+import com.sam.thebible.ui.main.MainViewModel
+import kotlin.getValue
 
-class SearchResultAdapter : ListAdapter<SearchResult, SearchResultAdapter.ViewHolder>(DiffCallback()) {
-    
+
+class SearchResultAdapter(private val viewModel: MainViewModel) : ListAdapter<SearchResult, SearchResultAdapter.ViewHolder>(DiffCallback()) {
+
     private var keyword: String = ""
     private var fontSize: Float = 16f
     private var fontColor: Int = Color.BLACK
     private var onItemClickListener: ((SearchResult) -> Unit)? = null
+
     
     fun setOnItemClickListener(listener: (SearchResult) -> Unit) {
         onItemClickListener = listener
@@ -41,13 +48,13 @@ class SearchResultAdapter : ListAdapter<SearchResult, SearchResultAdapter.ViewHo
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        holder.bind(getItem(position), position == itemCount - 1)
     }
 
-    inner class ViewHolder(private val binding: ItemSearchResultBinding) : 
+    inner class ViewHolder(private val binding: ItemSearchResultBinding) :
         RecyclerView.ViewHolder(binding.root) {
         
-        fun bind(result: SearchResult) {
+        fun bind(result: SearchResult, isLastItem: Boolean) {
             if (result.type == "message") {
                 binding.tvBookChapter.text = result.bookName
                 binding.tvContent.text = result.content
@@ -69,10 +76,13 @@ class SearchResultAdapter : ListAdapter<SearchResult, SearchResultAdapter.ViewHo
                 onItemClickListener?.invoke(result)
             }
 
-            // 关闭按钮处理
+            // Show close button only on the last item
+            binding.tvClose.visibility = if (isLastItem) android.view.View.VISIBLE else android.view.View.GONE
+            
+            // Close button handling - return to main page with last position
             binding.tvClose.setOnClickListener {
-                val activity = binding.root.context as? androidx.fragment.app.FragmentActivity
-                activity?.supportFragmentManager?.popBackStack()
+                Log.d("SearchResultAdapter", "Close button clicked")
+                viewModel.backToLastBkChapter()
             }
         }
         

@@ -126,7 +126,7 @@ class MainFragment : Fragment() {
 
     private fun setupRecyclerView() {
         verseAdapter = VerseAdapter()
-        searchResultAdapter = SearchResultAdapter()
+        searchResultAdapter = SearchResultAdapter(viewModel)
         bookmarkAdapter = MainBookmarkAdapter()
         
         searchResultAdapter.setOnItemClickListener { searchResult ->
