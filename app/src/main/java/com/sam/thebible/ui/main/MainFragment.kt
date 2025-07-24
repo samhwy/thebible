@@ -127,7 +127,7 @@ class MainFragment : Fragment() {
     private fun setupRecyclerView() {
         verseAdapter = VerseAdapter()
         searchResultAdapter = SearchResultAdapter(viewModel)
-        bookmarkAdapter = MainBookmarkAdapter()
+        bookmarkAdapter = MainBookmarkAdapter(viewModel)
         
         searchResultAdapter.setOnItemClickListener { searchResult ->
             viewModel.jumpToVerse(searchResult.book, searchResult.chapter)

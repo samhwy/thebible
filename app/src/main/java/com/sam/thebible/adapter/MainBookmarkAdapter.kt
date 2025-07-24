@@ -1,7 +1,7 @@
 package com.sam.thebible.adapter
 
 import android.graphics.Color
-import com.sam.thebible.data.database.dao.BookDao
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.ViewGroup
 import androidx.recyclerview.widget.DiffUtil
@@ -9,10 +9,11 @@ import androidx.recyclerview.widget.ListAdapter
 import androidx.recyclerview.widget.RecyclerView
 import com.sam.thebible.data.model.Bookmark
 import com.sam.thebible.databinding.ItemSearchResultBinding
+import com.sam.thebible.ui.main.MainViewModel
 import java.text.SimpleDateFormat
 import java.util.*
 
-class MainBookmarkAdapter : ListAdapter<Bookmark, MainBookmarkAdapter.ViewHolder>(DiffCallback()) {
+class MainBookmarkAdapter(private val viewModel: MainViewModel) : ListAdapter<Bookmark, MainBookmarkAdapter.ViewHolder>(DiffCallback()) {
     private var fontSize: Float = 16f
     private var fontColor: Int = Color.BLACK
     private var onItemClickListener: ((Bookmark) -> Unit)? = null
@@ -40,13 +41,13 @@ class MainBookmarkAdapter : ListAdapter<Bookmark, MainBookmarkAdapter.ViewHolder
     }
 
     override fun onBindViewHolder(holder: ViewHolder, position: Int) {
-        holder.bind(getItem(position))
+        holder.bind(getItem(position),  position == itemCount - 1)
     }
 
     inner class ViewHolder(private val binding: ItemSearchResultBinding) : 
         RecyclerView.ViewHolder(binding.root) {
         
-        fun bind(bookmark: Bookmark) {
+        fun bind(bookmark: Bookmark, isLastItem: Boolean) {
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val dateStr = bookmark.timestamp.let { dateFormat.format(Date(it*1000)) } ?: ""
 
@@ -75,6 +76,14 @@ class MainBookmarkAdapter : ListAdapter<Bookmark, MainBookmarkAdapter.ViewHolder
             binding.root.setOnLongClickListener {
                 onItemLongClickListener?.invoke(bookmark)
                 true
+            }
+
+            // Show close button only on the last item
+            binding.tvClose.visibility = if (isLastItem) android.view.View.VISIBLE else android.view.View.GONE
+
+            // Close button handling - return to main page with last position
+            binding.tvClose.setOnClickListener {
+                viewModel.backToLastBkChapter()
             }
         }
     }

@@ -206,12 +206,12 @@ class MainViewModel @Inject constructor(
     }
 
     fun backToLastBkChapter() {
-
-        lastBook?.let { book ->
-            lastChapter.let { chapter ->
-                loadChapter(book.code, chapter)
-            }
-        }
+        loadChapter(lastBook?.code?: "Gen",  lastChapter)
+//        lastBook?.let { book ->
+//            lastChapter.let { chapter ->
+//                loadChapter(book.code, chapter)
+//            }
+//        }
     }
 
     fun addBookmark(book: String, chapter: Int, verse: Int, selectedText: String, notes: String) {
