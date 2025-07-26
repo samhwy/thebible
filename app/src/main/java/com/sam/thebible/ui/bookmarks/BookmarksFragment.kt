@@ -147,7 +147,7 @@ class BookmarksFragment : Fragment() {
 
     private fun viewNoteDialog(bookmark: Bookmark) {
         AlertDialog.Builder(requireContext())
-            .setTitle("備註")
+            .setTitle("\uD83D\uDCDD")
             .setMessage(bookmark.notes)
             .setPositiveButton("關閉", null)
             .show()

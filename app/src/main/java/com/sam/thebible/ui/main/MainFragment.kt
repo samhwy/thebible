@@ -253,6 +253,10 @@ class MainFragment : Fragment() {
 
         viewModel.languageMode.observe(viewLifecycleOwner) { languageMode ->
             verseAdapter.setLanguageMode(languageMode)
+            // Update book spinner when language changes
+            viewModel.books.value?.let { books ->
+                setupBookSpinner(books)
+            }
         }
 
         viewModel.searchResults.observe(viewLifecycleOwner) { results ->
@@ -292,7 +296,12 @@ class MainFragment : Fragment() {
         val mainActivity = activity as? MainActivity
         val (bookSpinner, _) = mainActivity?.getToolbarSpinners() ?: return
 
-        val bookNames = books.map { it.tcName ?: it.engName ?: it.code }
+        val bookNames = books.map { book ->
+            when (settingsManager.languageMode) {
+                1 -> book.engName ?: book.tcName ?: book.code // English mode
+                else -> book.tcName ?: book.engName ?: book.code // Chinese/Both modes
+            }
+        }
         val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item_custom, bookNames)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         bookSpinner?.adapter = adapter
@@ -316,7 +325,10 @@ class MainFragment : Fragment() {
         val (_, chapterSpinner) = mainActivity?.getToolbarSpinners() ?: return
 
         val chapterCount = book.numChapter ?: 1
-        val chapters = (1..chapterCount).map { "$it 章" }
+        val isEnglish = settingsManager.languageMode == 1
+        val chapters = (1..chapterCount).map { 
+            if (isEnglish) "$it" else "$it 章"
+        }
         val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item_custom, chapters)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         chapterSpinner?.adapter = adapter
@@ -455,9 +467,19 @@ class MainFragment : Fragment() {
     }
     
     private fun showBookmarkOptionsDialog(bookmark: Bookmark) {
-        val options = arrayOf("檢視備註", "编緝備註", "删除書籤")
+        val isEnglish = settingsManager.languageMode == 1
+        val options = if (isEnglish) arrayOf(
+            getString(R.string.view_notes_en),
+            getString(R.string.edit_notes_en),
+            getString(R.string.delete_bookmark_en)
+        ) else arrayOf(
+            getString(R.string.view_notes),
+            getString(R.string.edit_notes),
+            getString(R.string.delete_bookmark)
+        )
+        
         android.app.AlertDialog.Builder(requireContext())
-            .setTitle("操作書籤")
+            .setTitle(getString(if (isEnglish) R.string.bookmark_operations_en else R.string.bookmark_operations))
             .setItems(options) { _, which ->
                 when (which) {
                     0 -> viewNoteDialog(bookmark)
@@ -475,10 +497,10 @@ class MainFragment : Fragment() {
         editText.setSelection(editText.text.length)
 
         val dialog = android.app.AlertDialog.Builder(context)
-            .setTitle("编辑笔记")
+            .setTitle("\uD83D\uDCDD")
             .setView(editText)
-            .setNegativeButton("取消", null)
-            .setPositiveButton("保存") { _, _ ->
+            .setNegativeButton(getString(R.string.cancel_en), null)
+            .setPositiveButton(getString(R.string.ok_en)) { _, _ ->
                 val newNote = editText.text.toString()
                 if (newNote != bookmark.notes) {
                     val updated = bookmark.copy(notes = newNote)
@@ -490,20 +512,27 @@ class MainFragment : Fragment() {
     }
 
     private fun confirmDeleteBookmark(bookmark: Bookmark) {
+        val isEnglish = settingsManager.languageMode == 1
+        val title = if (isEnglish) "Delete Bookmark" else "删除書籤"
+        val message = if (isEnglish) "Are you sure to delete this bookmark?" else "确定要删除該書籤嗎？"
+        val cancelText = if (isEnglish) "Cancel" else "取消"
+        val deleteText = if (isEnglish) "Delete" else "删除"
+        val toastMessage = if (isEnglish) "Bookmark deleted" else "書籤已删除"
+
         android.app.AlertDialog.Builder(requireContext())
-            .setTitle("删除書籤")
-            .setMessage("确定要删除該書籤嗎？")
-            .setNegativeButton("取消", null)
-            .setPositiveButton("删除") { _, _ ->
+            .setTitle(title)
+            .setMessage(message)
+            .setNegativeButton(cancelText, null)
+            .setPositiveButton(deleteText) { _, _ ->
                 viewModel.deleteBookmark(bookmark)
-                android.widget.Toast.makeText(requireContext(), "書籤已删除", android.widget.Toast.LENGTH_SHORT).show()
+                android.widget.Toast.makeText(requireContext(), toastMessage, android.widget.Toast.LENGTH_SHORT).show()
             }
             .show()
     }
 
     private fun viewNoteDialog(bookmark: Bookmark) {
         android.app.AlertDialog.Builder(requireContext())
-            .setTitle("備註")
+            .setTitle("\uD83D\uDCD6")
             .setMessage(bookmark.notes)
             .setPositiveButton("關閉", null)
             .show()

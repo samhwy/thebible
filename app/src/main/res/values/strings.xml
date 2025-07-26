@@ -16,11 +16,11 @@
     <string name="export_bookmarks_en">Export Bookmarks</string>
     <string name="import_bookmarks">匯入書籤</string>
     <string name="import_bookmarks_en">Import Bookmarks</string>
-    <string name="font_size">字體大小</string>
+    <string name="font_size">字體大小 Font size</string>
     <string name="font_size_en">Font Size</string>
-    <string name="font_color">字體顏色</string>
+    <string name="font_color">字體顏色 Font color</string>
     <string name="font_color_en">Font Color</string>
-    <string name="background_color">背景顏色</string>
+    <string name="background_color">背景顏色 Background color</string>
     <string name="background_color_en">Background Color</string>
     <string name="cancel">取消</string>
     <string name="cancel_en">Cancel</string>
@@ -46,4 +46,14 @@
     <string name="orange_en">Orange</string>
     <string name="parchment_en">Parchment</string>
     <string name="darkgray_en">Dark Gray</string>
+    <string name="view_notes">檢視備註</string>
+    <string name="view_notes_en">View Notes</string>
+    <string name="edit_notes">編輯備註</string>
+    <string name="edit_notes_en">Edit Notes</string>
+    <string name="delete_bookmark">刪除書籤</string>
+    <string name="delete_bookmark_en">Delete Bookmark</string>
+    <string name="bookmark_operations">操作書籤</string>
+    <string name="bookmark_operations_en">Bookmark Operations</string>
+    <string name="chapter">章</string>
+    <string name="chapter_en">Chapter</string>
 </resources>

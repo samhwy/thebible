@@ -58,7 +58,7 @@ class MainBookmarkAdapter(private val viewModel: MainViewModel) : ListAdapter<Bo
             binding.tvBookChapter.text = "${bookmark.book} ${bookmark.chapter}:${bookmark.verse} ($dateStr)"
 
             binding.tvContent.text = bookmark.selectedText
-            binding.tvNotes.text = "Notes: ${bookmark.notes}"
+            binding.tvNotes.text = "\uD83D\uDCDD: ${bookmark.notes}"
 
             binding.tvBookChapter.textSize = fontSize - 2f
             binding.tvContent.textSize = fontSize -3f
