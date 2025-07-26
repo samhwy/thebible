@@ -10,6 +10,7 @@ import androidx.recyclerview.widget.RecyclerView
 import com.sam.thebible.data.model.Bookmark
 import com.sam.thebible.databinding.ItemSearchResultBinding
 import com.sam.thebible.ui.main.MainViewModel
+import com.sam.thebible.utils.SettingsManager
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -18,11 +19,8 @@ class MainBookmarkAdapter(private val viewModel: MainViewModel) : ListAdapter<Bo
     private var fontColor: Int = Color.BLACK
     private var onItemClickListener: ((Bookmark) -> Unit)? = null
     private var onItemLongClickListener: ((Bookmark) -> Unit)? = null
-    
-    fun setOnItemClickListener(listener: (Bookmark) -> Unit) {
-        onItemClickListener = listener
-    }
-    
+    private lateinit var settingsManager: SettingsManager
+
     fun setOnItemLongClickListener(listener: (Bookmark) -> Unit) {
         onItemLongClickListener = listener
     }
@@ -37,6 +35,7 @@ class MainBookmarkAdapter(private val viewModel: MainViewModel) : ListAdapter<Bo
         val binding = ItemSearchResultBinding.inflate(
             LayoutInflater.from(parent.context), parent, false
         )
+        settingsManager = SettingsManager(parent.context)
         return ViewHolder(binding)
     }
 
@@ -51,11 +50,14 @@ class MainBookmarkAdapter(private val viewModel: MainViewModel) : ListAdapter<Bo
             val dateFormat = SimpleDateFormat("yyyy-MM-dd", Locale.getDefault())
             val dateStr = bookmark.timestamp.let { dateFormat.format(Date(it*1000)) } ?: ""
 
-            // 判断 selectedText 是否为英文（包含英文字母则认为是英文）
-//            val isEnglish = bookmark.selectedText?.any { it.isLetter() && it.code < 128 } == true
-//            val bookName = if (isEnglish) bookmark.bookEn ?: bookmark.book else bookmark.book
-
-            binding.tvBookChapter.text = "${bookmark.book} ${bookmark.chapter}:${bookmark.verse} ($dateStr)"
+            val bookName = viewModel.books.value?.find { it.code == bookmark.book }?.let { book ->
+                when (settingsManager.languageMode) {
+                    1 -> book.engName ?: book.tcName ?: book.code // English mode
+                    else -> book.tcName ?: book.engName ?: book.code // Chinese/Both modes
+                }
+            } ?: bookmark.book
+            
+            binding.tvBookChapter.text = "$bookName ${bookmark.chapter}:${bookmark.verse} ($dateStr)"
 
             binding.tvContent.text = bookmark.selectedText
             binding.tvNotes.text = "\uD83D\uDCDD: ${bookmark.notes}"

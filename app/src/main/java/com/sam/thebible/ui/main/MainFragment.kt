@@ -96,7 +96,7 @@ class MainFragment : Fragment() {
         val (bookSpinner, chapterSpinner) = mainActivity?.getToolbarSpinners() ?: return
 
         bookSpinner?.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val book = viewModel.books.value?.get(position) ?: return
                 val toChapter = if (viewModel.lastBook != viewModel.currentBook.value && viewModel.lastChapter == 1) {
                     book.numChapter ?: 1
@@ -446,18 +446,18 @@ class MainFragment : Fragment() {
             .setView(dialogView)
             .create()
         
-        dialogView.findViewById<android.view.View>(R.id.btnCopy).setOnClickListener {
+        dialogView.findViewById<View>(R.id.btnCopy).setOnClickListener {
             val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             val clip = android.content.ClipData.newPlainText("Bible Verse", tvSelectedText.text)
             clipboard.setPrimaryClip(clip)
             android.widget.Toast.makeText(requireContext(), "Copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
         }
         
-        dialogView.findViewById<android.view.View>(R.id.btnCancel).setOnClickListener {
+        dialogView.findViewById<View>(R.id.btnCancel).setOnClickListener {
             dialog.dismiss()
         }
         
-        dialogView.findViewById<android.view.View>(R.id.btnSave).setOnClickListener {
+        dialogView.findViewById<View>(R.id.btnSave).setOnClickListener {
             val notes = etNotes.text.toString()
             viewModel.addBookmark(verse.book, verse.chapter, verse.verse, selectedText, notes)
             dialog.dismiss()
