@@ -73,7 +73,8 @@ class SearchResultAdapter(private val viewModel: MainViewModel) : ListAdapter<Se
             binding.tvContent.setTextColor(fontColor)
             
             binding.root.setOnClickListener {
-                onItemClickListener?.invoke(result)
+                Log.d("SearchResultAdapter", " search result=${result.book}, ${result.chapter}, ${result.verse}")
+                viewModel.jumpToVerse(result.book, result.chapter, result.verse)
             }
 
             // Show close button only on the last item

@@ -70,7 +70,8 @@ class MainBookmarkAdapter(private val viewModel: MainViewModel) : ListAdapter<Bo
             binding.tvContent.ellipsize = android.text.TextUtils.TruncateAt.END
 
             binding.root.setOnClickListener {
-                onItemClickListener?.invoke(bookmark)
+                Log.d("MainBookmarkAdapter", " bookmark click=${bookmark.book}, ${bookmark.chapter}, ${bookmark.verse}")
+                viewModel.jumpToVerse(bookmark.book, bookmark.chapter, bookmark.verse)
             }
 
             binding.root.setOnLongClickListener {

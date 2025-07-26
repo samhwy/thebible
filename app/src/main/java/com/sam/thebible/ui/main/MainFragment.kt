@@ -129,17 +129,13 @@ class MainFragment : Fragment() {
         searchResultAdapter = SearchResultAdapter(viewModel)
         bookmarkAdapter = MainBookmarkAdapter(viewModel)
         
-        searchResultAdapter.setOnItemClickListener { searchResult ->
-            viewModel.jumpToVerse(searchResult.book, searchResult.chapter)
-        }
+
         
         verseAdapter.setOnTextSelectedListener { verse, selectedText ->
             showBookmarkDialog(verse, selectedText)
         }
         
-        bookmarkAdapter.setOnItemClickListener { bookmark ->
-            viewModel.jumpToVerse(bookmark.book, bookmark.chapter, bookmark.verse)
-        }
+
         
         bookmarkAdapter.setOnItemLongClickListener { bookmark ->
             showBookmarkOptionsDialog(bookmark)
@@ -244,7 +240,11 @@ class MainFragment : Fragment() {
             // Scroll to target verse if specified
             viewModel.targetVerse.value?.let { verse ->
                 if (verse > 0 && verse <= verses.size) {
-                    (binding.rvContent.layoutManager as? LinearLayoutManager)?.scrollToPosition(verse - 1)
+                    binding.rvContent.post {
+                        (binding.rvContent.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(verse - 1, 0)
+                    }
+                    // clearTargetVerse to reset the target verse after scrolling,
+                    // preventing unintended scrolls when the same value is reused
                     viewModel.clearTargetVerse()
                 }
             }

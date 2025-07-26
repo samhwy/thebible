@@ -10,6 +10,7 @@ import com.sam.thebible.data.model.Book
 import com.sam.thebible.data.model.SearchResult
 import com.sam.thebible.data.model.Verse
 import com.sam.thebible.data.repository.BibleRepository
+import com.sam.thebible.utils.Constants.DEFAULT_BOOK
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.launch
 import java.lang.Thread.sleep
@@ -61,8 +62,12 @@ class MainViewModel @Inject constructor(
         //loadBooks()
     }
 
-    //private
-    fun loadBooks(book: String, chapter: Int = 1) {
+    /**
+     * Load books from database and update UI
+     * @param book default is DEFAULT_BOOK
+     * @param chapter default is 1
+     */
+    fun loadBooks(book: String = DEFAULT_BOOK, chapter: Int = 1) {
         viewModelScope.launch {
             try {
                 
@@ -84,16 +89,21 @@ class MainViewModel @Inject constructor(
     }
 
 
-    fun selectBook(book: Book, chapter: Int = 1) {
+    /**
+     * go to the book and chapter when user select the book from UI
+     * @param book
+     * @param chapter default is 1
+     */
+    fun selectBook(book: Book, chapter: Int = 1, verse: Int? = 1) {
         Log.d("selectBook", "checkpoint curr book: $lastBook, chapter: $lastChapter")
         //Thread.dumpStack()
         _currentBook.value = book
         _currentChapter.value = chapter
         if (lastBook!= book && lastChapter == 1) {  //check current book and chapter is the 1st chapter of last book
-            loadChapter(book.code, book.numChapter ?: 1)
+            loadChapter(book.code, book.numChapter ?: 1, verse)
         }
         else {
-            loadChapter(book.code, chapter)
+            loadChapter(book.code, chapter,  verse)
         }
         lastBook = book
         lastChapter = chapter
@@ -104,6 +114,8 @@ class MainViewModel @Inject constructor(
             if (chapter in 1..(book.numChapter ?: 0) ) {
                 _currentChapter.value = chapter
                 loadChapter(book.code, chapter)
+                lastBook = book
+                lastChapter = chapter
             }
         }
     }
@@ -118,7 +130,7 @@ class MainViewModel @Inject constructor(
                     _books.value?.let { books ->
                         val currentIndex = books.indexOf(book)
                         if (currentIndex < books.size - 1) {
-                            selectBook(books[currentIndex + 1])
+                            selectBook(books[currentIndex + 1], 1)
                         }
                     }
                 }
@@ -137,9 +149,8 @@ class MainViewModel @Inject constructor(
                         val currentIndex = books.indexOf(book)
                         if (currentIndex > 0) {
                             val prevBook = books[currentIndex - 1]
-                            _currentBook.value = prevBook
-                            _currentChapter.value = prevBook.numChapter ?: 1
-                            loadChapter(prevBook.code, prevBook.numChapter ?: 1)
+                            val lastChapterNum = prevBook.numChapter ?: 1
+                            selectBook(prevBook, lastChapterNum)
                         }
                     }
                 }
@@ -147,13 +158,22 @@ class MainViewModel @Inject constructor(
         }
     }
 
-     fun loadChapter(bookCode: String, chapter: Int) {
+
+    /**
+     * Load chapter from database and update UI with verseList
+     * @param bookCode
+     * @param chapter
+     */
+    fun loadChapter(bookCode: String, chapter: Int, verse: Int? = 1) {
         viewModelScope.launch {
             try {
+                Log.d("loadChapter", "loadChapter book: $bookCode, chapter: $chapter, verse: $verse")
                 val verseList = repository.getChapter(bookCode, chapter)
                 _verses.value = verseList
                 _isSearchMode.value = false
                 _isBookmarkMode.value = false
+                if (verse != null && verse > 1)
+                  _targetVerse.value = verse
             } catch (e: Exception) {
                 // Handle error
                 println("Error loading chapter: ${e.message}")
@@ -196,22 +216,20 @@ class MainViewModel @Inject constructor(
 
         _books.value?.find { it.code == bookCode }?.let { book ->
             Log.d("jumpToVerse", "checkpoint 5 book: $bookCode, chapter: $chapter, verse: $verse")
-            lastBook=book
-            lastChapter = chapter
-            selectBook(book, chapter)
+            selectBook(book, chapter, verse)
             _isSearchMode.value = false
             _isBookmarkMode.value = false
-            _targetVerse.value = verse
+            // _targetVerse.value = verse
         }
     }
 
     fun backToLastBkChapter() {
-        loadChapter(lastBook?.code?: "Gen",  lastChapter)
-//        lastBook?.let { book ->
-//            lastChapter.let { chapter ->
-//                loadChapter(book.code, chapter)
-//            }
-//        }
+        val bookCode = lastBook?.code ?: _currentBook.value?.code ?: DEFAULT_BOOK
+        val chapter = if (lastChapter > 0) lastChapter else _currentChapter.value ?: 1
+        
+        _currentBook.value = lastBook ?: _currentBook.value
+        _currentChapter.value = chapter
+        loadChapter(bookCode, chapter)
     }
 
     fun addBookmark(book: String, chapter: Int, verse: Int, selectedText: String, notes: String) {
