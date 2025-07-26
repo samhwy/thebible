@@ -19,4 +19,7 @@ interface BookmarkDao {
     
     @Query("SELECT * FROM bookmarks WHERE book = :book AND chapter = :chapter AND verse = :verse")
     suspend fun getBookmarkForVerse(book: String, chapter: Int, verse: Int): List<Bookmark>
+    
+    @Insert
+    suspend fun insertBookmarks(bookmarks: List<Bookmark>)
 }

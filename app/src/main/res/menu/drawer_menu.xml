@@ -9,6 +9,14 @@
         android:icon="@drawable/ic_bookmark"
         android:title="Bookmarks" />
     <item
+        android:id="@+id/nav_export_bookmarks"
+        android:icon="@android:drawable/ic_menu_save"
+        android:title="Export Bookmarks" />
+    <item
+        android:id="@+id/nav_import_bookmarks"
+        android:icon="@android:drawable/ic_menu_upload"
+        android:title="Import Bookmarks" />
+    <item
         android:id="@+id/nav_settings"
         android:icon="@drawable/ic_settings"
         android:title="@string/settings" />

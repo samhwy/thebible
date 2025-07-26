@@ -65,4 +65,5 @@ class BibleRepository @Inject constructor(
     suspend fun getAllBookmarks() = bookmarkDao.getAllBookmarks()
     suspend fun updateBookmark(bookmark: com.sam.thebible.data.model.Bookmark) = bookmarkDao.updateBookmark(bookmark)
     suspend fun deleteBookmark(bookmark: com.sam.thebible.data.model.Bookmark) = bookmarkDao.deleteBookmark(bookmark)
+    suspend fun insertBookmarks(bookmarks: List<com.sam.thebible.data.model.Bookmark>) = bookmarkDao.insertBookmarks(bookmarks)
 }

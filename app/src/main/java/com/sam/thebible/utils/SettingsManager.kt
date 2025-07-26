@@ -21,9 +21,9 @@ class SettingsManager(private val context: Context) {
         // Log current values after initialization
         Log.d(TAG, "SettingsManager initialized - Book: $lastBookCode, Chapter: $lastChapter")
         }
-    var showEnglish: Boolean
-        get() = prefs.getBoolean("show_english", true)
-        set(value) = prefs.edit().putBoolean("show_english", value).apply()
+    var languageMode: Int
+        get() = prefs.getInt("language_mode", 2) // 0=Chinese, 1=English, 2=Both
+        set(value) = prefs.edit().putInt("language_mode", value).apply()
 
     var fontSize: Int
         get() = prefs.getInt("font_size", 5)

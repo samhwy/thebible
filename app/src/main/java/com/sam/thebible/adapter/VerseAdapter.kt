@@ -10,7 +10,7 @@ import com.sam.thebible.databinding.ItemVerseBinding
 
 class VerseAdapter : ListAdapter<Verse, VerseAdapter.VerseViewHolder>(VerseDiffCallback()) {
     
-    private var showEnglish = true
+    private var languageMode = 2 // 0=Chinese, 1=English, 2=Both
     private var fontSize = 16f
     private var textColor = android.graphics.Color.BLACK
     private var onTextSelectedListener: ((Verse, String) -> Unit)? = null
@@ -19,8 +19,8 @@ class VerseAdapter : ListAdapter<Verse, VerseAdapter.VerseViewHolder>(VerseDiffC
         onTextSelectedListener = listener
     }
 
-    fun setShowEnglish(show: Boolean) {
-        showEnglish = show
+    fun setLanguageMode(mode: Int) {
+        languageMode = mode
         notifyDataSetChanged()
     }
     
@@ -36,27 +36,32 @@ class VerseAdapter : ListAdapter<Verse, VerseAdapter.VerseViewHolder>(VerseDiffC
     }
 
     override fun onBindViewHolder(holder: VerseViewHolder, position: Int) {
-        holder.bind(getItem(position), showEnglish)
+        holder.bind(getItem(position), languageMode)
     }
 
     inner class VerseViewHolder(private val binding: ItemVerseBinding) : RecyclerView.ViewHolder(binding.root) {
-        fun bind(verse: Verse, showEnglish: Boolean) {
+        fun bind(verse: Verse, languageMode: Int) {
             binding.tvVerseNumber.text = verse.verse.toString()
-            binding.tvChineseContent.text = verse.chineseContent
-            
             binding.tvVerseNumber.textSize = fontSize
-            binding.tvChineseContent.textSize = fontSize
             binding.tvVerseNumber.setTextColor(textColor)
-            binding.tvChineseContent.setTextColor(textColor)
             
-            // Enable text selection
-            binding.tvChineseContent.setTextIsSelectable(true)
-            binding.tvChineseContent.setOnLongClickListener {
-                onTextSelectedListener?.invoke(verse, binding.tvChineseContent.text.toString())
-                true
+            // Show/hide Chinese content based on language mode
+            if (languageMode == 0 || languageMode == 2) { // Chinese or Both
+                binding.tvChineseContent.text = verse.chineseContent
+                binding.tvChineseContent.textSize = fontSize
+                binding.tvChineseContent.setTextColor(textColor)
+                binding.tvChineseContent.visibility = android.view.View.VISIBLE
+                binding.tvChineseContent.setTextIsSelectable(true)
+                binding.tvChineseContent.setOnLongClickListener {
+                    onTextSelectedListener?.invoke(verse, binding.tvChineseContent.text.toString())
+                    true
+                }
+            } else {
+                binding.tvChineseContent.visibility = android.view.View.GONE
             }
             
-            if (showEnglish && verse.englishContent.isNotEmpty()) {
+            // Show/hide English content based on language mode
+            if ((languageMode == 1 || languageMode == 2) && verse.englishContent.isNotEmpty()) { // English or Both
                 binding.tvEnglishContent.text = verse.englishContent
                 binding.tvEnglishContent.textSize = fontSize
                 binding.tvEnglishContent.setTextColor(textColor)

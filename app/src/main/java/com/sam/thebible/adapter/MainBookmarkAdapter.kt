@@ -80,7 +80,7 @@ class MainBookmarkAdapter(private val viewModel: MainViewModel) : ListAdapter<Bo
             }
 
             // Show close button only on the last item
-            binding.tvClose.visibility = if (isLastItem) android.view.View.VISIBLE else android.view.View.GONE
+            binding.tvClose.visibility = if (isLastItem || itemCount == 0) android.view.View.VISIBLE else android.view.View.GONE
 
             // Close button handling - return to main page with last position
             binding.tvClose.setOnClickListener {

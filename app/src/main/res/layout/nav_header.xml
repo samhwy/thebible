@@ -8,10 +8,17 @@
     android:paddingStart="6dp"
     android:paddingEnd="10dp">
 
-    <CheckBox
-        android:id="@+id/cbChineseEnglish"
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="中英對照" />
+        android:text="語言顯示:"
+        android:textSize="14sp"
+        android:layout_marginBottom="4dp" />
+    
+    <Spinner
+        android:id="@+id/spinnerLanguage"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:minWidth="120dp" />
 
 </LinearLayout>

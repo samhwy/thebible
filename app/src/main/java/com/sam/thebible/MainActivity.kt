@@ -1,15 +1,26 @@
 package com.sam.thebible
 
 import android.app.AlertDialog
+import android.content.Intent
 import android.graphics.Color
+import android.net.Uri
 import android.os.Bundle
+import android.os.Environment
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
+import android.widget.ArrayAdapter
 import android.widget.CheckBox
 import android.widget.EditText
 import android.widget.SeekBar
 import android.widget.Spinner
+import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
+import androidx.lifecycle.lifecycleScope
+import kotlinx.coroutines.launch
+import java.io.File
+import java.text.SimpleDateFormat
+import java.util.*
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -29,6 +40,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private lateinit var appBarConfiguration: AppBarConfiguration
     private lateinit var binding: ActivityMainBinding
     private lateinit var settingsManager: SettingsManager
+
+    private val exportLauncher = registerForActivityResult(ActivityResultContracts.CreateDocument("*/*")) { uri ->
+        uri?.let { exportToUri(it) }
+    }
+
+    private val importLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
+        uri?.let { importFromUri(it) }
+    }.apply {
+        // This ensures we can access files from any directory
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         settingsManager = SettingsManager(this)
@@ -199,7 +220,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             settingsManager.backgroundColorIndex = spinnerBackgroundColor.selectedItemPosition
 
             getCurrentMainFragment()?.applySettings(
-                settingsManager.showEnglish,
+                settingsManager.languageMode,
                 seekBarFontSize.progress,
                 spinnerFontColor.selectedItemPosition,
                 spinnerBackgroundColor.selectedItemPosition
@@ -249,17 +270,25 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun setupDrawerHeader() {
         val headerView = binding.navView.getHeaderView(0)
-        val cbChineseEnglish = headerView.findViewById<CheckBox>(R.id.cbChineseEnglish)
+        val spinnerLanguage = headerView.findViewById<Spinner>(R.id.spinnerLanguage)
 
-        cbChineseEnglish.isChecked = settingsManager.showEnglish
-        cbChineseEnglish.setOnCheckedChangeListener { _, isChecked ->
-            settingsManager.showEnglish = isChecked
-            getCurrentMainFragment()?.applySettings(
-                isChecked,
-                settingsManager.fontSize,
-                settingsManager.fontColorIndex,
-                settingsManager.backgroundColorIndex
-            )
+        val languageOptions = arrayOf("中文", "English", "中英對照")
+        val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, languageOptions)
+        adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+        spinnerLanguage.adapter = adapter
+
+        spinnerLanguage.setSelection(settingsManager.languageMode)
+        spinnerLanguage.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+                settingsManager.languageMode = position
+                getCurrentMainFragment()?.applySettings(
+                    position,
+                    settingsManager.fontSize,
+                    settingsManager.fontColorIndex,
+                    settingsManager.backgroundColorIndex
+                )
+            }
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
         }
     }
 
@@ -274,9 +303,70 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             R.id.nav_bookmarks -> {
                 showBookmarksFragment()
             }
+            R.id.nav_export_bookmarks -> {
+                exportBookmarks()
+            }
+            R.id.nav_import_bookmarks -> {
+                importBookmarks()
+            }
         }
         binding.drawerLayout.closeDrawer(GravityCompat.END)
         return true
+    }
+
+    private fun exportBookmarks() {
+        try {
+            exportLauncher.launch("thebible.csv")
+        } catch (e: Exception) {
+            Toast.makeText(this, "Error opening file picker: ${e.message}", Toast.LENGTH_SHORT).show()
+        }
+    }
+
+    private fun exportToUri(uri: Uri) {
+        lifecycleScope.launch {
+            try {
+                val mainFragment = getCurrentMainFragment()
+                if (mainFragment == null) {
+                    Toast.makeText(this@MainActivity, "Error: Main fragment not found", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+                
+                val csvContent = mainFragment.viewModel.exportBookmarks()
+                if (csvContent.isBlank()) {
+                    Toast.makeText(this@MainActivity, "No bookmarks to export", Toast.LENGTH_SHORT).show()
+                    return@launch
+                }
+
+                contentResolver.openOutputStream(uri)?.use { outputStream ->
+                    outputStream.write(csvContent.toByteArray(Charsets.UTF_8))
+                    outputStream.flush()
+                }
+                Toast.makeText(this@MainActivity, "Bookmarks exported successfully", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Log.e("MainActivity", "Export failed", e)
+                Toast.makeText(this@MainActivity, "Export failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
+    }
+
+    private fun importBookmarks() {
+        importLauncher.launch(arrayOf("*/*"))
+    }
+
+    private fun importFromUri(uri: Uri) {
+        lifecycleScope.launch {
+            try {
+                val csvContent = contentResolver.openInputStream(uri)?.use { inputStream ->
+                    inputStream.bufferedReader().readText()
+                } ?: throw Exception("Could not read file")
+
+                val mainFragment = getCurrentMainFragment()
+                mainFragment?.viewModel?.importBookmarks(csvContent)
+                Toast.makeText(this@MainActivity, "Bookmarks imported successfully", Toast.LENGTH_LONG).show()
+            } catch (e: Exception) {
+                Toast.makeText(this@MainActivity, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
+            }
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {

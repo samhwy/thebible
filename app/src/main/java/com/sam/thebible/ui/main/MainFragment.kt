@@ -82,9 +82,7 @@ class MainFragment : Fragment() {
         val backgroundColors = arrayOf(R.color.white, R.color.black, R.color.parchment, R.color.dark_gray)
         currentBackgroundColor = getColorFromResource(backgroundColors.getOrElse(settingsManager.backgroundColorIndex) { R.color.white })
 
-        if (settingsManager.showEnglish != (viewModel.showEnglish.value ?: true)) {
-            viewModel.toggleEnglish()
-        }
+        viewModel.setLanguageMode(settingsManager.languageMode)
 
         applyTextSettings()
     }
@@ -160,7 +158,7 @@ class MainFragment : Fragment() {
                 val diffX = e2.x - e1.x
                 val diffY = e2.y - e1.y
 
-                if (abs(diffX) > abs(diffY) && abs(diffX) > 100 && abs(velocityX) > 100) {
+                if (abs(diffX) > abs(diffY) && abs(diffX) > 50 && abs(velocityX) > 50) {
                     if (diffX > 0) {
                         // Swipe right - previous chapter
                         onPrevChapter()
@@ -174,9 +172,12 @@ class MainFragment : Fragment() {
             }
         })
 
-        binding.rvContent.setOnTouchListener { _, event ->
-            gestureDetector.onTouchEvent(event)
-            false
+        binding.rvContent.setOnTouchListener { view, event ->
+            val result = gestureDetector.onTouchEvent(event)
+            if (!result) {
+                view.performClick()
+            }
+            result
         }
     }
 
@@ -250,8 +251,8 @@ class MainFragment : Fragment() {
             }
         }
 
-        viewModel.showEnglish.observe(viewLifecycleOwner) { showEnglish ->
-            verseAdapter.setShowEnglish(showEnglish)
+        viewModel.languageMode.observe(viewLifecycleOwner) { languageMode ->
+            verseAdapter.setLanguageMode(languageMode)
         }
 
         viewModel.searchResults.observe(viewLifecycleOwner) { results ->
@@ -397,10 +398,8 @@ class MainFragment : Fragment() {
     }
 
 
-    fun applySettings(showEnglish: Boolean, fontSize: Int, fontColorIndex: Int, backgroundColorIndex: Int) {
-        if (showEnglish != (viewModel.showEnglish.value ?: true)) {
-            viewModel.toggleEnglish()
-        }
+    fun applySettings(languageMode: Int, fontSize: Int, fontColorIndex: Int, backgroundColorIndex: Int) {
+        viewModel.setLanguageMode(languageMode)
 
         currentFontSize = 12f + fontSize * 2f
 

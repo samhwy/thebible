@@ -37,8 +37,8 @@ class MainViewModel @Inject constructor(
     private val _searchResults = MutableLiveData<List<SearchResult>>()
     val searchResults: LiveData<List<SearchResult>> = _searchResults
 
-    private val _showEnglish = MutableLiveData<Boolean>()
-    val showEnglish: LiveData<Boolean> = _showEnglish
+    private val _languageMode = MutableLiveData<Int>()
+    val languageMode: LiveData<Int> = _languageMode
 
     private val _isSearchMode = MutableLiveData<Boolean>()
     val isSearchMode: LiveData<Boolean> = _isSearchMode
@@ -56,7 +56,7 @@ class MainViewModel @Inject constructor(
     var lastChapter: Int = 1
 
     init {
-        _showEnglish.value = true
+        _languageMode.value = 2 // Default to Both
         _isSearchMode.value = false
         _isBookmarkMode.value = false
         //loadBooks()
@@ -196,8 +196,8 @@ class MainViewModel @Inject constructor(
         }
     }
 
-    fun toggleEnglish() {
-        _showEnglish.value = !(_showEnglish.value ?: true)
+    fun setLanguageMode(mode: Int) {
+        _languageMode.value = mode
     }
 
     fun exitSearchMode() {
@@ -283,6 +283,46 @@ class MainViewModel @Inject constructor(
             } catch (e: Exception) {
                 println("Error deleting bookmark: ${e.message}")
             }
+        }
+    }
+    
+    suspend fun exportBookmarks(): String {
+        return try {
+            val bookmarks = repository.getAllBookmarks()
+            val csv = StringBuilder()
+            csv.append("Book,Chapter,Verse,SelectedText,Notes,Timestamp\n")
+            bookmarks.forEach { bookmark ->
+                csv.append("\"${bookmark.book}\",${bookmark.chapter},${bookmark.verse},\"${bookmark.selectedText.replace("\"", "\\\"")}\",\"${bookmark.notes?.replace("\"", "\\\"") ?: ""}\",${bookmark.timestamp}\n")
+            }
+            csv.toString()
+        } catch (e: Exception) {
+            throw Exception("Export failed: ${e.message}")
+        }
+    }
+    
+    suspend fun importBookmarks(csvContent: String) {
+        try {
+            val lines = csvContent.split("\n").drop(1).filter { it.isNotBlank() }
+            val bookmarks = lines.mapNotNull { line ->
+                try {
+                    val parts = line.split(",(?=(?:[^\"]*\"[^\"]*\")*[^\"]*$)".toRegex())
+                    if (parts.size >= 6) {
+                        com.sam.thebible.data.model.Bookmark(
+                            book = parts[0].trim('\"'),
+                            chapter = parts[1].toInt(),
+                            verse = parts[2].toInt(),
+                            selectedText = parts[3].trim('\"').replace("\\\"", "\""),
+                            notes = parts[4].trim('\"').replace("\\\"", "\""),
+                            timestamp = parts[5].toLong()
+                        )
+                    } else null
+                } catch (e: Exception) {
+                    null
+                }
+            }
+            repository.insertBookmarks(bookmarks)
+        } catch (e: Exception) {
+            throw Exception("Import failed: ${e.message}")
         }
     }
 }
