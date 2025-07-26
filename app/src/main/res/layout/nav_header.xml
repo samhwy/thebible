@@ -11,7 +11,7 @@
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="語言顯示:"
+        android:text="語言 Language:"
         android:textSize="14sp"
         android:layout_marginBottom="4dp" />
     

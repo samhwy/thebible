@@ -162,15 +162,25 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private fun showSettingsDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_settings, null)
+        val isEnglish = settingsManager.languageMode == 1
 
         val cbDarkMode = dialogView.findViewById<CheckBox>(R.id.cbDarkMode)
         val seekBarFontSize = dialogView.findViewById<SeekBar>(R.id.seekBarFontSize)
         val spinnerFontColor = dialogView.findViewById<Spinner>(R.id.spinnerFontColor)
         val spinnerBackgroundColor = dialogView.findViewById<Spinner>(R.id.spinnerBackgroundColor)
 
+        // Set checkbox text based on language
+        cbDarkMode.text = getString(if (isEnglish) R.string.dark_mode_en else R.string.dark_mode)
+
         // Font colors: white, black, green, yellow, orange
         val fontColors = arrayOf(Color.WHITE, Color.BLACK, Color.GREEN, Color.YELLOW, 0xFFFFA500.toInt())
-        val fontColorNames = arrayOf(
+        val fontColorNames = if (isEnglish) arrayOf(
+            getString(R.string.white_en),
+            getString(R.string.black_en),
+            getString(R.string.green_en),
+            getString(R.string.yellow_en),
+            getString(R.string.orange_en)
+        ) else arrayOf(
             getString(R.string.white),
             getString(R.string.black),
             getString(R.string.green),
@@ -178,15 +188,18 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             getString(R.string.orange)
         )
 
-        // Background colors: white, black, parchment, dark gray, very dark
-        val backgroundColors = arrayOf(Color.WHITE, Color.BLACK, R.color.parchment, R.color.dark_gray) //, 0xFF1A1A1A.toInt())
-        val backgroundColorNames = arrayOf(
+        // Background colors: white, black, parchment, dark gray
+        val backgroundColors = arrayOf(Color.WHITE, Color.BLACK, R.color.parchment, R.color.dark_gray)
+        val backgroundColorNames = if (isEnglish) arrayOf(
+            getString(R.string.white_en),
+            getString(R.string.black_en),
+            getString(R.string.parchment_en),
+            getString(R.string.darkgray_en)
+        ) else arrayOf(
             getString(R.string.white),
             getString(R.string.black),
             getString(R.string.parchment),
             getString(R.string.darkgray)
-            /*,
-            "極深" */
         )
 
         val fontColorAdapter = ColorSpinnerAdapter(this, fontColors, fontColorNames)
@@ -204,6 +217,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
         val dialog = AlertDialog.Builder(this)
+            .setTitle(getString(if (isEnglish) R.string.settings_en else R.string.settings))
             .setView(dialogView)
             .create()
 
@@ -272,15 +286,31 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val headerView = binding.navView.getHeaderView(0)
         val spinnerLanguage = headerView.findViewById<Spinner>(R.id.spinnerLanguage)
 
-        val languageOptions = arrayOf("中文", "English", "中英對照")
+        val languageOptions = when (settingsManager.languageMode) {
+            1 -> arrayOf("中文", "English", "TC&Eng") //arrayOf("Chinese", "English", "Chinese+English")
+            else -> arrayOf("中文", "English", "中英對照")
+        }
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, languageOptions)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerLanguage.adapter = adapter
 
         spinnerLanguage.setSelection(settingsManager.languageMode)
+        
+        // Update spinner options when language changes
+        fun updateSpinnerOptions() {
+            val newOptions = when (settingsManager.languageMode) {
+                1 -> arrayOf("Chinese", "English", "Chinese+English")
+                else -> arrayOf("中文", "English", "中英對照")
+            }
+            val newAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, newOptions)
+            newAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
+            spinnerLanguage.adapter = newAdapter
+            spinnerLanguage.setSelection(settingsManager.languageMode)
+        }
         spinnerLanguage.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
                 settingsManager.languageMode = position
+                updateMenuLanguage(position)
                 getCurrentMainFragment()?.applySettings(
                     position,
                     settingsManager.fontSize,
@@ -290,6 +320,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             }
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
         }
+        
+        // Set initial menu language
+        updateMenuLanguage(settingsManager.languageMode)
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
@@ -367,6 +400,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 Toast.makeText(this@MainActivity, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
             }
         }
+    }
+
+    private fun updateMenuLanguage(languageMode: Int) {
+        val menu = binding.navView.menu
+        val isEnglish = languageMode == 1 // 0=Chinese, 1=English, 2=Both(Chinese menu)
+        
+        menu.findItem(R.id.nav_search)?.title = getString(if (isEnglish) R.string.search_en else R.string.search)
+        menu.findItem(R.id.nav_bookmarks)?.title = getString(if (isEnglish) R.string.bookmarks_en else R.string.bookmarks)
+        menu.findItem(R.id.nav_export_bookmarks)?.title = getString(if (isEnglish) R.string.export_bookmarks_en else R.string.export_bookmarks)
+        menu.findItem(R.id.nav_import_bookmarks)?.title = getString(if (isEnglish) R.string.import_bookmarks_en else R.string.import_bookmarks)
+        menu.findItem(R.id.nav_settings)?.title = getString(if (isEnglish) R.string.settings_en else R.string.settings)
     }
 
     override fun onSupportNavigateUp(): Boolean {
