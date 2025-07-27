@@ -221,11 +221,17 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             .setView(dialogView)
             .create()
 
-        dialogView.findViewById<android.view.View>(R.id.btnCancel).setOnClickListener {
+        val btnCancel = dialogView.findViewById<android.widget.Button>(R.id.btnCancel)
+        val btnOk = dialogView.findViewById<android.widget.Button>(R.id.btnOk)
+        
+        btnCancel.text = getString(if (isEnglish) R.string.cancel_en else R.string.cancel)
+        btnOk.text = getString(if (isEnglish) R.string.ok_en else R.string.ok)
+
+        btnCancel.setOnClickListener {
             dialog.dismiss()
         }
 
-        dialogView.findViewById<android.view.View>(R.id.btnOk).setOnClickListener {
+        btnOk.setOnClickListener {
             val needsRestart = cbDarkMode.isChecked != settingsManager.isDarkMode
 
             settingsManager.isDarkMode = cbDarkMode.isChecked
@@ -403,14 +409,16 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     }
 
     private fun updateMenuLanguage(languageMode: Int) {
-        val menu = binding.navView.menu
-        val isEnglish = languageMode == 1 // 0=Chinese, 1=English, 2=Both(Chinese menu)
-        
-        menu.findItem(R.id.nav_search)?.title = getString(if (isEnglish) R.string.search_en else R.string.search)
-        menu.findItem(R.id.nav_bookmarks)?.title = getString(if (isEnglish) R.string.bookmarks_en else R.string.bookmarks)
-        menu.findItem(R.id.nav_export_bookmarks)?.title = getString(if (isEnglish) R.string.export_bookmarks_en else R.string.export_bookmarks)
-        menu.findItem(R.id.nav_import_bookmarks)?.title = getString(if (isEnglish) R.string.import_bookmarks_en else R.string.import_bookmarks)
-        menu.findItem(R.id.nav_settings)?.title = getString(if (isEnglish) R.string.settings_en else R.string.settings)
+        binding.navView.post {
+            val menu = binding.navView.menu
+            val isEnglish = languageMode == 1 // 0=Chinese, 1=English, 2=Both(Chinese menu)
+            
+            menu.findItem(R.id.nav_search)?.title = getString(if (isEnglish) R.string.search_en else R.string.search)
+            menu.findItem(R.id.nav_bookmarks)?.title = getString(if (isEnglish) R.string.bookmarks_en else R.string.bookmarks)
+            menu.findItem(R.id.nav_export_bookmarks)?.title = getString(if (isEnglish) R.string.export_bookmarks_en else R.string.export_bookmarks)
+            menu.findItem(R.id.nav_import_bookmarks)?.title = getString(if (isEnglish) R.string.import_bookmarks_en else R.string.import_bookmarks)
+            menu.findItem(R.id.nav_settings)?.title = getString(if (isEnglish) R.string.settings_en else R.string.settings)
+        }
     }
 
     override fun onSupportNavigateUp(): Boolean {
