@@ -1,5 +1,6 @@
 package com.sam.thebible.ui.main
 
+import android.annotation.SuppressLint
 import android.graphics.Color
 import android.os.Bundle
 import android.view.GestureDetector
@@ -115,7 +116,7 @@ class MainFragment : Fragment() {
         })
 
         chapterSpinner?.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 viewModel.selectChapter(position + 1)
             }
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
@@ -145,6 +146,7 @@ class MainFragment : Fragment() {
         }
     }
 
+    @SuppressLint("ClickableViewAccessibility")
     private fun setupGestureDetector() {
         gestureDetector = GestureDetector(requireContext(), object : GestureDetector.SimpleOnGestureListener() {
             override fun onFling(
@@ -435,29 +437,51 @@ class MainFragment : Fragment() {
         return viewModel.books.value?.indexOf(book) ?: 0
     }
 
+    @SuppressLint("SetTextI18n")
     private fun showBookmarkDialog(verse: Verse, selectedText: String) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_bookmark, null)
+        val isEnglish = settingsManager.languageMode == 1
+        
         val tvSelectedText = dialogView.findViewById<android.widget.TextView>(R.id.tvSelectedText)
         val etNotes = dialogView.findViewById<android.widget.EditText>(R.id.etNotes)
+        val btnCopy = dialogView.findViewById<android.widget.Button>(R.id.btnCopy)
+        val btnCancel = dialogView.findViewById<android.widget.Button>(R.id.btnCancel)
+        val btnSave = dialogView.findViewById<android.widget.Button>(R.id.btnSave)
         
-        tvSelectedText.text = "${verse.book} ${verse.chapter}:${verse.verse} - $selectedText"
+        // Set bilingual text
+        etNotes.hint = if (isEnglish) "Add your notes here..." else "在此新增備註..."
+        btnCopy.text = getString(if (isEnglish) R.string.copy_en else R.string.copy)
+        btnCancel.text = getString(if (isEnglish) R.string.cancel_en else R.string.cancel)
+        btnSave.text = getString(if (isEnglish) R.string.save_en else R.string.save)
+        
+        // Get book name based on language
+        val bookName = viewModel.books.value?.find { it.code == verse.book }?.let { book ->
+            when (settingsManager.languageMode) {
+                1 -> book.engName ?: book.tcName ?: book.code
+                else -> book.tcName ?: book.engName ?: book.code
+            }
+        } ?: verse.book
+        
+        tvSelectedText.text = "$bookName ${verse.chapter}:${verse.verse} - $selectedText"
         
         val dialog = android.app.AlertDialog.Builder(requireContext())
+            .setTitle(getString(if (isEnglish) R.string.add_bookmark_en else R.string.add_bookmark))
             .setView(dialogView)
             .create()
         
-        dialogView.findViewById<View>(R.id.btnCopy).setOnClickListener {
+        btnCopy.setOnClickListener {
             val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
             val clip = android.content.ClipData.newPlainText("Bible Verse", tvSelectedText.text)
             clipboard.setPrimaryClip(clip)
-            android.widget.Toast.makeText(requireContext(), "Copied to clipboard", android.widget.Toast.LENGTH_SHORT).show()
+            val message = getString(if (isEnglish) R.string.copied_to_clipboard_en else R.string.copied_to_clipboard)
+            android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_SHORT).show()
         }
         
-        dialogView.findViewById<View>(R.id.btnCancel).setOnClickListener {
+        btnCancel.setOnClickListener {
             dialog.dismiss()
         }
         
-        dialogView.findViewById<View>(R.id.btnSave).setOnClickListener {
+        btnSave.setOnClickListener {
             val notes = etNotes.text.toString()
             viewModel.addBookmark(verse.book, verse.chapter, verse.verse, selectedText, notes)
             dialog.dismiss()

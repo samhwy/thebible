@@ -1,11 +1,9 @@
 package com.sam.thebible
 
 import android.app.AlertDialog
-import android.content.Intent
 import android.graphics.Color
 import android.net.Uri
 import android.os.Bundle
-import android.os.Environment
 import android.util.Log
 import android.view.LayoutInflater
 import android.view.MenuItem
@@ -18,9 +16,6 @@ import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.lifecycle.lifecycleScope
 import kotlinx.coroutines.launch
-import java.io.File
-import java.text.SimpleDateFormat
-import java.util.*
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -301,18 +296,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         spinnerLanguage.adapter = adapter
 
         spinnerLanguage.setSelection(settingsManager.languageMode)
-        
-        // Update spinner options when language changes
-        fun updateSpinnerOptions() {
-            val newOptions = when (settingsManager.languageMode) {
-                1 -> arrayOf("Chinese", "English", "Chinese+English")
-                else -> arrayOf("中文", "English", "中英對照")
-            }
-            val newAdapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, newOptions)
-            newAdapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
-            spinnerLanguage.adapter = newAdapter
-            spinnerLanguage.setSelection(settingsManager.languageMode)
-        }
+
         spinnerLanguage.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
                 settingsManager.languageMode = position

@@ -56,4 +56,14 @@
     <string name="bookmark_operations_en">Bookmark Operations</string>
     <string name="chapter">章</string>
     <string name="chapter_en">Chapter</string>
+    <string name="add_bookmark">新增書籤</string>
+    <string name="add_bookmark_en">Add Bookmark</string>
+    <string name="copy">複製</string>
+    <string name="copy_en">Copy</string>
+    <string name="save">儲存</string>
+    <string name="save_en">Save</string>
+    <string name="notes">備註</string>
+    <string name="notes_en">Notes</string>
+    <string name="copied_to_clipboard">已複製到剪貼簿</string>
+    <string name="copied_to_clipboard_en">Copied to clipboard</string>
 </resources>

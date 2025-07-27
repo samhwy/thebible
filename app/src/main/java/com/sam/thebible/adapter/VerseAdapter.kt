@@ -52,9 +52,19 @@ class VerseAdapter : ListAdapter<Verse, VerseAdapter.VerseViewHolder>(VerseDiffC
                 binding.tvChineseContent.setTextColor(textColor)
                 binding.tvChineseContent.visibility = android.view.View.VISIBLE
                 binding.tvChineseContent.setTextIsSelectable(true)
-                binding.tvChineseContent.setOnLongClickListener {
-                    onTextSelectedListener?.invoke(verse, binding.tvChineseContent.text.toString())
-                    true
+                binding.tvChineseContent.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
+                    override fun onCreateActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+                        menu?.add("Add Bookmark")?.setOnMenuItemClickListener {
+                            val selectedText = getSelectedText(binding.tvChineseContent)
+                            onTextSelectedListener?.invoke(verse, selectedText)
+                            mode?.finish()
+                            true
+                        }
+                        return true
+                    }
+                    override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?) = false
+                    override fun onActionItemClicked(mode: android.view.ActionMode?, item: android.view.MenuItem?) = false
+                    override fun onDestroyActionMode(mode: android.view.ActionMode?) {}
                 }
             } else {
                 binding.tvChineseContent.visibility = android.view.View.GONE
@@ -67,9 +77,19 @@ class VerseAdapter : ListAdapter<Verse, VerseAdapter.VerseViewHolder>(VerseDiffC
                 binding.tvEnglishContent.setTextColor(textColor)
                 binding.tvEnglishContent.visibility = android.view.View.VISIBLE
                 binding.tvEnglishContent.setTextIsSelectable(true)
-                binding.tvEnglishContent.setOnLongClickListener {
-                    onTextSelectedListener?.invoke(verse, binding.tvEnglishContent.text.toString())
-                    true
+                binding.tvEnglishContent.customSelectionActionModeCallback = object : android.view.ActionMode.Callback {
+                    override fun onCreateActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?): Boolean {
+                        menu?.add("Add Bookmark")?.setOnMenuItemClickListener {
+                            val selectedText = getSelectedText(binding.tvEnglishContent)
+                            onTextSelectedListener?.invoke(verse, selectedText)
+                            mode?.finish()
+                            true
+                        }
+                        return true
+                    }
+                    override fun onPrepareActionMode(mode: android.view.ActionMode?, menu: android.view.Menu?) = false
+                    override fun onActionItemClicked(mode: android.view.ActionMode?, item: android.view.MenuItem?) = false
+                    override fun onDestroyActionMode(mode: android.view.ActionMode?) {}
                 }
             } else {
                 binding.tvEnglishContent.visibility = android.view.View.GONE
@@ -77,6 +97,16 @@ class VerseAdapter : ListAdapter<Verse, VerseAdapter.VerseViewHolder>(VerseDiffC
         }
     }
 
+    private fun getSelectedText(textView: android.widget.TextView): String {
+        val start = textView.selectionStart
+        val end = textView.selectionEnd
+        return if (start >= 0 && end > start) {
+            textView.text.substring(start, end)
+        } else {
+            textView.text.toString()
+        }
+    }
+    
     class VerseDiffCallback : DiffUtil.ItemCallback<Verse>() {
         override fun areItemsTheSame(oldItem: Verse, newItem: Verse): Boolean {
             return oldItem.book == newItem.book && 
