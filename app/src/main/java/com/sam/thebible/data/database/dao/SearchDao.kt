@@ -18,7 +18,7 @@ interface SearchDao {
     
     @Query("""
         SELECT k.book, b.tc_name as bookName, k.chapter, k.verse, k.content, 'english' as type
-        FROM kjv k 
+        FROM asv k 
         JOIN books b ON k.book = b.code 
         WHERE k.content LIKE '%' || :keyword || '%' 
         ORDER BY b.seq, k.chapter, k.verse
@@ -34,7 +34,7 @@ interface SearchDao {
             WHERE h.content LIKE '%' || :keyword || '%'
             UNION ALL
             SELECT k.book, b.tc_name as bookName, k.chapter, k.verse, k.content,  'english' as type, b.seq
-            FROM kjv k 
+            FROM asv k 
             JOIN books b ON k.book = b.code 
             WHERE k.content LIKE '%' || :keyword || '%'
         ) ORDER BY seq, chapter, verse

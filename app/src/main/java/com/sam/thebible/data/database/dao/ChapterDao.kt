@@ -10,6 +10,6 @@ interface ChapterDao {
     @Query("SELECT * FROM hb5 WHERE book = :bookCode AND chapter = :chapter ORDER BY verse")
     suspend fun getChineseVerses(bookCode: String, chapter: Int): List<ChineseVerse>
     
-    @Query("SELECT * FROM kjv WHERE book = :bookCode AND chapter = :chapter ORDER BY verse")
+    @Query("SELECT * FROM asv WHERE book = :bookCode AND chapter = :chapter ORDER BY verse")
     suspend fun getEnglishVerses(bookCode: String, chapter: Int): List<EnglishVerse>
 }

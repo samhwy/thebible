@@ -33,13 +33,13 @@ abstract class BibleDatabase : RoomDatabase() {
                 // Check if database already exists
                 val dbFile = context.getDatabasePath("bible_database")
                 val dbExists = dbFile.exists()
-                
+
                 val builder = Room.databaseBuilder(
                     context.applicationContext,
                     BibleDatabase::class.java,
                     "bible_database"
                 )
-                
+
                 // Only create from asset if database doesn't exist yet
                 if (!dbExists) {
                     builder.createFromAsset("bible.db")
@@ -61,9 +61,9 @@ abstract class BibleDatabase : RoomDatabase() {
                             }
                         })
                 }
-                
+
                 val instance = builder
-                   // .fallbackToDestructiveMigration() // Add this temporarily for testing()
+                     //.fallbackToDestructiveMigration() // Add this temporarily for testing()
                     .build()
                 INSTANCE = instance
                 instance

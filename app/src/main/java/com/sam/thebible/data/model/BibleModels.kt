@@ -3,6 +3,7 @@ package com.sam.thebible.data.model
 import android.annotation.SuppressLint
 import androidx.annotation.NonNull
 import androidx.room.ColumnInfo
+import androidx.room.DatabaseView
 import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
@@ -38,7 +39,7 @@ data class ChineseVerse(
 )
 
 @Entity(
-    tableName = "kjv",
+    tableName = "asv",
     primaryKeys = ["book", "chapter", "verse"] // Composite primary key
 )
 data class EnglishVerse(
