@@ -444,13 +444,13 @@ class MainFragment : Fragment() {
         
         val tvSelectedText = dialogView.findViewById<android.widget.TextView>(R.id.tvSelectedText)
         val etNotes = dialogView.findViewById<android.widget.EditText>(R.id.etNotes)
-        val btnCopy = dialogView.findViewById<android.widget.Button>(R.id.btnCopy)
+        //val btnCopy = dialogView.findViewById<android.widget.Button>(R.id.btnCopy)
         val btnCancel = dialogView.findViewById<android.widget.Button>(R.id.btnCancel)
         val btnSave = dialogView.findViewById<android.widget.Button>(R.id.btnSave)
         
         // Set bilingual text
         etNotes.hint = if (isEnglish) "Add your notes here..." else "在此新增備註..."
-        btnCopy.text = getString(if (isEnglish) R.string.copy_en else R.string.copy)
+       // btnCopy.text = getString(if (isEnglish) R.string.copy_en else R.string.copy)
         btnCancel.text = getString(if (isEnglish) R.string.cancel_en else R.string.cancel)
         btnSave.text = getString(if (isEnglish) R.string.save_en else R.string.save)
         
@@ -469,13 +469,13 @@ class MainFragment : Fragment() {
             .setView(dialogView)
             .create()
         
-        btnCopy.setOnClickListener {
-            val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-            val clip = android.content.ClipData.newPlainText("Bible Verse", tvSelectedText.text)
-            clipboard.setPrimaryClip(clip)
-            val message = getString(if (isEnglish) R.string.copied_to_clipboard_en else R.string.copied_to_clipboard)
-            android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_SHORT).show()
-        }
+//        btnCopy.setOnClickListener {
+//            val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
+//            val clip = android.content.ClipData.newPlainText("Bible Verse", tvSelectedText.text)
+//            clipboard.setPrimaryClip(clip)
+//            val message = getString(if (isEnglish) R.string.copied_to_clipboard_en else R.string.copied_to_clipboard)
+//            android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_SHORT).show()
+//        }
         
         btnCancel.setOnClickListener {
             dialog.dismiss()
