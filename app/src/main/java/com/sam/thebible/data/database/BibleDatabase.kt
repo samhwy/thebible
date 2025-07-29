@@ -15,7 +15,8 @@ import com.sam.thebible.data.model.ChineseVerse
 import com.sam.thebible.data.model.EnglishVerse
 
 @Database(
-    entities = [Book::class, ChineseVerse::class, EnglishVerse::class, Bookmark::class],
+    entities = [Book::class, ChineseVerse::class, /*EnglishVerse::class,*/ Bookmark::class],
+    //views = [EnglishVerse::class],
     version = 2,
     exportSchema = false
 )
@@ -43,7 +44,7 @@ abstract class BibleDatabase : RoomDatabase() {
                 // Only create from asset if database doesn't exist yet
                 if (!dbExists) {
                     builder.createFromAsset("bible.db")
-                        .addCallback(object : RoomDatabase.Callback() {
+                        .addCallback(object : Callback() {
                             override fun onCreate(db: SupportSQLiteDatabase) {
                                 super.onCreate(db)
                                 // Create bookmarks table if it doesn't exist

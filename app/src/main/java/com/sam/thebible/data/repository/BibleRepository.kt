@@ -35,21 +35,30 @@ class BibleRepository @Inject constructor(
     }
     
     suspend fun searchKeyword(keyword: String): List<SearchResult> {
-        val chineseResults = searchDao.searchChinese(keyword).take(50)
-        val englishResults = searchDao.searchEnglish(keyword).take(50)
+        val fmtKeyword=keyword.replace("\\", "\\\\") // Escape backslashes first
+            .replace("'", "''")    // Escape single quotes
+            .replace("\"", "\"\"") // Escape double quotes
+            .replace(";", "")      // Remove semicolons
+            .replace("--", "")     // Remove comment markers
+            .replace("/*", "")     // Remove block comment start
+            .replace("*/", "")     // Remove block comment end
+            .replace("*", "%")
+        val chineseResults = searchDao.searchChinese(fmtKeyword).take(100)
+        val englishResults = searchDao.searchEnglish(fmtKeyword).take(100)
         
         val combinedResults = mutableListOf<SearchResult>()
         combinedResults.addAll(chineseResults.map { it.copy(type = "chinese") })
         combinedResults.addAll(englishResults.map { it.copy(type = "english") })
         
-        val sortedResults = combinedResults.sortedWith(
+        val sortedResults = combinedResults/*.sortedWith(
             compareBy<SearchResult> { it.book }
                 .thenBy { it.chapter }
                 .thenBy { it.verse }
-        ).take(100)
+        ).take(100)*/
         
         return if (chineseResults.size + englishResults.size >= 100) {
-            sortedResults + SearchResult(
+            sortedResults +
+                    SearchResult(
                 book = "",
                 bookName = "系統訊息",
                 chapter = 0,

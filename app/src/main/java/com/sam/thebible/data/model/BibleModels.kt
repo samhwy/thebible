@@ -1,11 +1,8 @@
 package com.sam.thebible.data.model
 
-import android.annotation.SuppressLint
-import androidx.annotation.NonNull
 import androidx.room.ColumnInfo
-import androidx.room.DatabaseView
+//import androidx.room.DatabaseView
 import androidx.room.Entity
-import androidx.room.Index
 import androidx.room.PrimaryKey
 
 @Entity(tableName = "books")
@@ -38,18 +35,19 @@ data class ChineseVerse(
     val content: String
 )
 
-@Entity(
-    tableName = "asv",
-    primaryKeys = ["book", "chapter", "verse"] // Composite primary key
-)
+
+/*@DatabaseView(
+    viewName = "english_version",
+    value="SELECT book, chapter, verse, content FROM english_version"
+)*/
 data class EnglishVerse(
-    @ColumnInfo(name = "book")
+    //@ColumnInfo(name = "book")
     val book: String,
-    @ColumnInfo(name = "chapter")
+    //@ColumnInfo(name = "chapter")
     val chapter: Int,
-    @ColumnInfo(name = "verse")
+    //@ColumnInfo(name = "verse")
     val verse: Int,
-    @ColumnInfo(name = "content")
+    //@ColumnInfo(name = "content")
     val content: String
 )
 
