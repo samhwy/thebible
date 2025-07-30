@@ -158,12 +158,4 @@ class SettingsManager(private val context: Context) {
         }
     }
 
-    /**
-     * Call this method to force reload position data from file
-     * Useful if you suspect the data isn't being loaded properly
-     */
-    fun forceReloadPosition(): Pair<String, Int> {
-        restorePositionFromFile()
-        return Pair(lastBookCode, lastChapter)
-    }
 }

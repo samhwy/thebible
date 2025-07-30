@@ -25,10 +25,7 @@ class SearchResultAdapter(private val viewModel: MainViewModel) : ListAdapter<Se
     private var fontColor: Int = Color.BLACK
     private var onItemClickListener: ((SearchResult) -> Unit)? = null
 
-    
-    fun setOnItemClickListener(listener: (SearchResult) -> Unit) {
-        onItemClickListener = listener
-    }
+
 
     fun setSearchKeyword(keyword: String) {
         this.keyword = keyword

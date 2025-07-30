@@ -26,21 +26,4 @@ interface SearchDao {
         LIMIT 100
     """)
     suspend fun searchEnglish(keyword: String): List<SearchResult>
-
-    @SkipQueryVerification
-    @Query("""
-        SELECT book, bookName, chapter, verse, content, type FROM (
-            SELECT h.book, b.tc_name as bookName, h.chapter, h.verse, h.content,  'chinese' as type, b.seq
-            FROM hb5 h 
-            JOIN books b ON h.book = b.code 
-            WHERE h.content LIKE '%' || :keyword || '%'
-            UNION ALL
-            SELECT k.book, b.tc_name as bookName, k.chapter, k.verse, k.content,  'english' as type, b.seq
-            FROM english_version k 
-            JOIN books b ON k.book = b.code 
-            WHERE k.content LIKE '%' || :keyword || '%'
-        ) ORDER BY seq, chapter, verse
-        LIMIT 100
-    """)
-    suspend fun searchBoth(keyword: String): List<SearchResult>
 }

@@ -164,8 +164,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val spinnerFontColor = dialogView.findViewById<Spinner>(R.id.spinnerFontColor)
         val spinnerBackgroundColor = dialogView.findViewById<Spinner>(R.id.spinnerBackgroundColor)
 
-        // Set checkbox text based on language
+        // Set checkbox text based on language and font size
         cbDarkMode.text = getString(if (isEnglish) R.string.dark_mode_en else R.string.dark_mode)
+        cbDarkMode.textSize = 12f + settingsManager.fontSize * 2f
 
         // Font colors: white, black, green, yellow, orange
         val fontColors = arrayOf(Color.WHITE, Color.BLACK, Color.GREEN, Color.YELLOW, 0xFFFFA500.toInt())
@@ -211,6 +212,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
 
 
+        // Apply font size to dialog text elements
+        val fontSize = 12f + settingsManager.fontSize * 2f
+
         val dialog = AlertDialog.Builder(this)
             .setTitle(getString(if (isEnglish) R.string.settings_en else R.string.settings))
             .setView(dialogView)
@@ -220,7 +224,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         val btnOk = dialogView.findViewById<android.widget.Button>(R.id.btnOk)
         
         btnCancel.text = getString(if (isEnglish) R.string.cancel_en else R.string.cancel)
+        btnCancel.textSize = fontSize - 2f
         btnOk.text = getString(if (isEnglish) R.string.ok_en else R.string.ok)
+        btnOk.textSize = fontSize - 2f
 
         btnCancel.setOnClickListener {
             dialog.dismiss()
@@ -402,6 +408,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             menu.findItem(R.id.nav_export_bookmarks)?.title = getString(if (isEnglish) R.string.export_bookmarks_en else R.string.export_bookmarks)
             menu.findItem(R.id.nav_import_bookmarks)?.title = getString(if (isEnglish) R.string.import_bookmarks_en else R.string.import_bookmarks)
             menu.findItem(R.id.nav_settings)?.title = getString(if (isEnglish) R.string.settings_en else R.string.settings)
+        }
+    }
+    
+    fun applyFontSizeToMenus(fontSize: Float) {
+        // Apply font size to drawer menu
+        binding.navView.post {
+            val menuView = binding.navView.getChildAt(0) as? androidx.recyclerview.widget.RecyclerView
+            menuView?.let { recyclerView ->
+                for (i in 0 until recyclerView.childCount) {
+                    val child = recyclerView.getChildAt(i)
+                    val textView = child.findViewById<android.widget.TextView>(com.google.android.material.R.id.design_menu_item_text)
+                    textView?.textSize = fontSize
+                }
+            }
+        }
+        
+        // Apply font size to language spinner in drawer header
+        val headerView = binding.navView.getHeaderView(0)
+        val spinnerLanguage = headerView.findViewById<android.widget.Spinner>(R.id.spinnerLanguage)
+        spinnerLanguage?.let { spinner ->
+            (spinner.selectedView as? android.widget.TextView)?.textSize = fontSize - 3f
         }
     }
 

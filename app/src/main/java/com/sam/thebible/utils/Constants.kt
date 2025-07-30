@@ -1,7 +1,6 @@
 package com.sam.thebible.utils
 
 object Constants {
-    const val DATABASE_NAME = "bible_database"
     const val DATABASE_VERSION = 1
     
     // Book codes

@@ -86,6 +86,8 @@ class MainFragment : Fragment() {
         viewModel.setLanguageMode(settingsManager.languageMode)
 
         applyTextSettings()
+        applyFontSizeToSpinners()
+        (activity as? MainActivity)?.applyFontSizeToMenus(currentFontSize)
     }
 
     private fun getColorFromResource(colorRes: Int): Int {
@@ -304,7 +306,18 @@ class MainFragment : Fragment() {
                 else -> book.tcName ?: book.engName ?: book.code // Chinese/Both modes
             }
         }
-        val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item_custom, bookNames)
+        val adapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, bookNames) {
+            override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                val view = super.getView(position, convertView, parent)
+                (view as? android.widget.TextView)?.textSize = currentFontSize - 2f
+                return view
+            }
+            override fun getDropDownView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                val view = super.getDropDownView(position, convertView, parent)
+                (view as? android.widget.TextView)?.textSize = currentFontSize
+                return view
+            }
+        }
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         bookSpinner?.adapter = adapter
 
@@ -331,7 +344,18 @@ class MainFragment : Fragment() {
         val chapters = (1..chapterCount).map { 
             if (isEnglish) "$it" else "$it 章"
         }
-        val adapter = ArrayAdapter(requireContext(), R.layout.spinner_item_custom, chapters)
+        val adapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, chapters) {
+            override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                val view = super.getView(position, convertView, parent)
+                (view as? android.widget.TextView)?.textSize = currentFontSize - 2f
+                return view
+            }
+            override fun getDropDownView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
+                val view = super.getDropDownView(position, convertView, parent)
+                (view as? android.widget.TextView)?.textSize = currentFontSize
+                return view
+            }
+        }
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         chapterSpinner?.adapter = adapter
 
@@ -424,6 +448,8 @@ class MainFragment : Fragment() {
         currentBackgroundColor = getColorFromResource(backgroundColors.getOrElse(backgroundColorIndex) { R.color.white })
 
         applyTextSettings()
+        applyFontSizeToSpinners()
+        (activity as? MainActivity)?.applyFontSizeToMenus(currentFontSize)
     }
 
     private fun applyTextSettings() {
@@ -431,6 +457,12 @@ class MainFragment : Fragment() {
         verseAdapter.updateTextSettings(currentFontSize, currentFontColor)
         searchResultAdapter.updateTextSettings(currentFontSize, currentFontColor)
         bookmarkAdapter.updateTextSettings(currentFontSize, currentFontColor)
+    }
+    
+    private fun applyFontSizeToSpinners() {
+        // Force refresh spinners with new font size
+        viewModel.books.value?.let { books -> setupBookSpinner(books) }
+        viewModel.currentBook.value?.let { book -> setupChapterSpinner(book) }
     }
 
     private fun getBookPosition(book: Book): Int {

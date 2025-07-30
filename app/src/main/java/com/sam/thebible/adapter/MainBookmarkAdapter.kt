@@ -17,7 +17,6 @@ import java.util.*
 class MainBookmarkAdapter(private val viewModel: MainViewModel) : ListAdapter<Bookmark, MainBookmarkAdapter.ViewHolder>(DiffCallback()) {
     private var fontSize: Float = 16f
     private var fontColor: Int = Color.BLACK
-    private var onItemClickListener: ((Bookmark) -> Unit)? = null
     private var onItemLongClickListener: ((Bookmark) -> Unit)? = null
     private lateinit var settingsManager: SettingsManager
 
