@@ -1,4 +1,4 @@
-# Offline Bible App (離線繁體中文聖經)
+# Offline Bible App (離線繁體中英文聖經)
 
 An Android offline Bible reading app with Chinese (Major) and English text support.
 
