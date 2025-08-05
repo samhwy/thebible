@@ -55,7 +55,6 @@ class MainFragment : Fragment() {
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
-
         settingsManager = SettingsManager(requireContext())
         setupRecyclerView()
         setupGestureDetector()
@@ -64,84 +63,56 @@ class MainFragment : Fragment() {
         loadSettings()
         val book = settingsManager.lastBookCode
         if (book.isNotEmpty()) {
-            //  Reload the last saved position if the book is not empty
             reloadPosition = true
             Log.d("MainActivity", "checkpoint saved book: $book saved chapter: ${settingsManager.lastChapter}")
             viewModel.loadBooks(book, settingsManager.lastChapter)
-        } else {
-            viewModel.loadBooks("GEN", 1)
-        }
-
+        } else viewModel.loadBooks("GEN", 1)
     }
 
     private fun loadSettings() {
         currentFontSize = 12f + settingsManager.fontSize * 2f
-
         val fontColors = arrayOf(R.color.white, R.color.black, R.color.green, R.color.yellow, R.color.orange)
         currentFontColor = getColorFromResource(fontColors.getOrElse(settingsManager.fontColorIndex) { R.color.black })
-
         val backgroundColors = arrayOf(R.color.white, R.color.black, R.color.parchment, R.color.dark_gray)
         currentBackgroundColor = getColorFromResource(backgroundColors.getOrElse(settingsManager.backgroundColorIndex) { R.color.white })
-
         viewModel.setLanguageMode(settingsManager.languageMode)
-
         applyTextSettings()
         applyFontSizeToSpinners()
         (activity as? MainActivity)?.applyFontSizeToMenus(currentFontSize)
     }
 
-    private fun getColorFromResource(colorRes: Int): Int {
-        return requireContext().getColor(colorRes)
-    }
+    private fun getColorFromResource(colorRes: Int): Int = requireContext().getColor(colorRes)
 
     private fun setupToolbarSpinners() {
         val mainActivity = activity as? MainActivity
         val (bookSpinner, chapterSpinner) = mainActivity?.getToolbarSpinners() ?: return
-
-        bookSpinner?.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
+        bookSpinner?.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
                 val book = viewModel.books.value?.get(position) ?: return
-                val toChapter = if (viewModel.lastBook != viewModel.currentBook.value && viewModel.lastChapter == 1) {
-                    book.numChapter ?: 1
-                } else if (book.code != settingsManager.lastBookCode || book.numChapter?:0 < settingsManager.lastChapter)
-                    1
-                else
-                    settingsManager.lastChapter
-
+                val toChapter = when {
+                    viewModel.lastBook != viewModel.currentBook.value && viewModel.lastChapter == 1 -> book.numChapter ?: 1
+                    book.code != settingsManager.lastBookCode || (book.numChapter ?: 0) < settingsManager.lastChapter -> 1
+                    else -> settingsManager.lastChapter
+                }
                 Log.d("MainActivity", "checkpoint current book: ${viewModel.currentBook.value} to Chapter:$toChapter ")
-                if (!reloadPosition)
-                    viewModel.selectBook(book, toChapter)
-
-                reloadPosition = false // Reset the flag after restoring the last saved position in onViewCreated
+                if (!reloadPosition) viewModel.selectBook(book, toChapter)
+                reloadPosition = false
             }
-            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
-        })
 
-        chapterSpinner?.setOnItemSelectedListener(object : android.widget.AdapterView.OnItemSelectedListener {
-            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) {
-                viewModel.selectChapter(position + 1)
-            }
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
-        })
+        }
+        chapterSpinner?.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
+            override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: View?, position: Int, id: Long) = viewModel.selectChapter(position + 1)
+            override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
+        }
     }
 
     private fun setupRecyclerView() {
         verseAdapter = VerseAdapter()
         searchResultAdapter = SearchResultAdapter(viewModel)
         bookmarkAdapter = MainBookmarkAdapter(viewModel)
-        
-
-        
-        verseAdapter.setOnTextSelectedListener { verse, selectedText ->
-            showBookmarkDialog(verse, selectedText)
-        }
-        
-
-        
-        bookmarkAdapter.setOnItemLongClickListener { bookmark ->
-            showBookmarkOptionsDialog(bookmark)
-        }
-        
+        verseAdapter.setOnTextSelectedListener { verse, selectedText -> showBookmarkDialog(verse, selectedText) }
+        bookmarkAdapter.setOnItemLongClickListener { bookmark -> showBookmarkOptionsDialog(bookmark) }
         binding.rvContent.apply {
             layoutManager = LinearLayoutManager(context)
             adapter = verseAdapter
@@ -186,108 +157,67 @@ class MainFragment : Fragment() {
     }
 
     private fun setupObservers() {
-        viewModel.books.observe(viewLifecycleOwner) { books ->
-            setupBookSpinner(books)
-        }
-
+        viewModel.books.observe(viewLifecycleOwner) { books -> setupBookSpinner(books) }
         viewModel.currentBook.observe(viewLifecycleOwner) { book ->
             book?.let {
                 Log.d("MainFragment", "checkpoint 3 current book: $it")
-                if (!reloadPosition)
-                    settingsManager.lastBookCode = it.code
-
+                if (!reloadPosition) settingsManager.lastBookCode = it.code
                 val mainActivity = activity as? MainActivity
                 val (bookSpinner, _) = mainActivity?.getToolbarSpinners() ?: return@let
-                if (!reloadPosition)
-                   bookSpinner?.setSelection(getBookPosition(it))
-                else {
-                   bookSpinner?.setSelection(
-                       viewModel.books.value?.firstOrNull { it.code == settingsManager.lastBookCode }?.let {
-                           getBookPosition(it)
-                       }?:0
-                    )
-                }
+                val position = if (!reloadPosition) getBookPosition(it) else viewModel.books.value?.firstOrNull { it.code == settingsManager.lastBookCode }?.let { getBookPosition(it) } ?: 0
+                bookSpinner?.setSelection(position)
                 setupChapterSpinner(it)
             }
         }
-
         viewModel.currentChapter.observe(viewLifecycleOwner) { chapter ->
-
-            //Thread.dumpStack()
-
-            if (!reloadPosition)
-               settingsManager.lastChapter = chapter
+            if (!reloadPosition) settingsManager.lastChapter = chapter
             val loadChapter = settingsManager.lastChapter
             Log.d("MainFragment", "checkpoint 4 current chapter: $loadChapter")
-
             val mainActivity = activity as? MainActivity
             val (_, chapterSpinner) = mainActivity?.getToolbarSpinners() ?: return@observe
-            if (chapterSpinner?.adapter != null && loadChapter > 0) {
-                // Make sure we don't try to select a chapter that doesn't exist in the adapter
-                val adapterCount = chapterSpinner.adapter.count
-                if (loadChapter <= adapterCount) {
-                    chapterSpinner.setSelection(loadChapter - 1)
-                } else {
-                    // If the saved chapter is out of bounds, select the last available chapter
-                    if (adapterCount > 0) {
+            chapterSpinner?.adapter?.let { adapter ->
+                val adapterCount = adapter.count
+                when {
+                    loadChapter <= adapterCount -> chapterSpinner.setSelection(loadChapter - 1)
+                    adapterCount > 0 -> {
                         chapterSpinner.setSelection(adapterCount - 1)
-                        // Update the saved chapter to match what we're displaying
                         settingsManager.lastChapter = adapterCount
                     }
                 }
             }
         }
-
         viewModel.verses.observe(viewLifecycleOwner) { verses ->
             verseAdapter.submitList(verses)
             applyTextSettings()
-            
-            // Scroll to target verse if specified
             viewModel.targetVerse.value?.let { verse ->
-                if (verse > 0 && verse <= verses.size) {
-                    binding.rvContent.post {
-                        (binding.rvContent.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(verse - 1, 0)
-                    }
-                    // clearTargetVerse to reset the target verse after scrolling,
-                    // preventing unintended scrolls when the same value is reused
+                if (verse in 1..verses.size) {
+                    binding.rvContent.post { (binding.rvContent.layoutManager as? LinearLayoutManager)?.scrollToPositionWithOffset(verse - 1, 0) }
                     viewModel.clearTargetVerse()
                 }
             }
         }
-
         viewModel.languageMode.observe(viewLifecycleOwner) { languageMode ->
             verseAdapter.setLanguageMode(languageMode)
-            // Update book spinner when language changes
-            viewModel.books.value?.let { books ->
-                setupBookSpinner(books)
-            }
+            viewModel.books.value?.let { books -> setupBookSpinner(books) }
         }
-
         viewModel.searchResults.observe(viewLifecycleOwner) { results ->
             searchResultAdapter.submitList(results)
             searchResultAdapter.updateTextSettings(currentFontSize, currentFontColor)
         }
-
         viewModel.isSearchMode.observe(viewLifecycleOwner) { isSearchMode ->
-            if (isSearchMode) {
-                binding.rvContent.adapter = searchResultAdapter
-            } else if (viewModel.isBookmarkMode.value == true) {
-                binding.rvContent.adapter = bookmarkAdapter
-            } else {
-                binding.rvContent.adapter = verseAdapter
+            binding.rvContent.adapter = when {
+                isSearchMode -> searchResultAdapter
+                viewModel.isBookmarkMode.value == true -> bookmarkAdapter
+                else -> verseAdapter
             }
         }
-        
         viewModel.isBookmarkMode.observe(viewLifecycleOwner) { isBookmarkMode ->
-            if (isBookmarkMode) {
-                binding.rvContent.adapter = bookmarkAdapter
-            } else if (viewModel.isSearchMode.value == true) {
-                binding.rvContent.adapter = searchResultAdapter
-            } else {
-                binding.rvContent.adapter = verseAdapter
+            binding.rvContent.adapter = when {
+                isBookmarkMode -> bookmarkAdapter
+                viewModel.isSearchMode.value == true -> searchResultAdapter
+                else -> verseAdapter
             }
         }
-        
         viewModel.bookmarks.observe(viewLifecycleOwner) { bookmarks ->
             bookmarkAdapter.submitList(bookmarks)
             bookmarkAdapter.updateTextSettings(currentFontSize, currentFontColor)
@@ -299,38 +229,22 @@ class MainFragment : Fragment() {
     private fun setupBookSpinner(books: List<Book>) {
         val mainActivity = activity as? MainActivity
         val (bookSpinner, _) = mainActivity?.getToolbarSpinners() ?: return
-
         val bookNames = books.map { book ->
             when (settingsManager.languageMode) {
-                1 -> book.engName ?: book.tcName ?: book.code // English mode
-                else -> book.tcName ?: book.engName ?: book.code // Chinese/Both modes
+                1 -> book.engName ?: book.tcName ?: book.code
+                else -> book.tcName ?: book.engName ?: book.code
             }
         }
         val adapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, bookNames) {
-            override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
-                val view = super.getView(position, convertView, parent)
-                (view as? android.widget.TextView)?.textSize = currentFontSize - 2f
-                return view
-            }
-            override fun getDropDownView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
-                val view = super.getDropDownView(position, convertView, parent)
-                (view as? android.widget.TextView)?.textSize = currentFontSize
-                return view
-            }
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = super.getView(position, convertView, parent).apply { (this as? android.widget.TextView)?.textSize = currentFontSize - 2f }
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = super.getDropDownView(position, convertView, parent).apply { (this as? android.widget.TextView)?.textSize = currentFontSize }
         }
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         bookSpinner?.adapter = adapter
-
-        // Load last book if available
-        val lastBookCode = settingsManager.lastBookCode
-        if (lastBookCode.isNotEmpty()) {
-            val lastBook = books.find { it.code == lastBookCode }
-            lastBook?.let {
-                val position = books.indexOf(it)
-                bookSpinner?.setSelection(position)
-                val lastChapter = settingsManager.lastChapter
-                if (!reloadPosition)
-                   viewModel.selectBook(it, lastChapter)
+        settingsManager.lastBookCode.takeIf { it.isNotEmpty() }?.let { lastBookCode ->
+            books.find { it.code == lastBookCode }?.let { lastBook ->
+                bookSpinner?.setSelection(books.indexOf(lastBook))
+                if (!reloadPosition) viewModel.selectBook(lastBook, settingsManager.lastChapter)
             }
         }
     }
@@ -338,95 +252,41 @@ class MainFragment : Fragment() {
     private fun setupChapterSpinner(book: Book) {
         val mainActivity = activity as? MainActivity
         val (_, chapterSpinner) = mainActivity?.getToolbarSpinners() ?: return
-
         val chapterCount = book.numChapter ?: 1
         val isEnglish = settingsManager.languageMode == 1
-        val chapters = (1..chapterCount).map { 
-            if (isEnglish) "$it" else "$it 章"
-        }
+        val chapters = (1..chapterCount).map { if (isEnglish) "$it" else "$it 章" }
         val adapter = object : ArrayAdapter<String>(requireContext(), android.R.layout.simple_spinner_item, chapters) {
-            override fun getView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
-                val view = super.getView(position, convertView, parent)
-                (view as? android.widget.TextView)?.textSize = currentFontSize - 2f
-                return view
-            }
-            override fun getDropDownView(position: Int, convertView: android.view.View?, parent: android.view.ViewGroup): android.view.View {
-                val view = super.getDropDownView(position, convertView, parent)
-                (view as? android.widget.TextView)?.textSize = currentFontSize
-                return view
-            }
+            override fun getView(position: Int, convertView: View?, parent: ViewGroup): View = super.getView(position, convertView, parent).apply { (this as? android.widget.TextView)?.textSize = currentFontSize - 2f }
+            override fun getDropDownView(position: Int, convertView: View?, parent: ViewGroup): View = super.getDropDownView(position, convertView, parent).apply { (this as? android.widget.TextView)?.textSize = currentFontSize }
         }
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         chapterSpinner?.adapter = adapter
-
-        // Load last chapter if same book
         if (book.code == settingsManager.lastBookCode) {
             val lastChapter = settingsManager.lastChapter
-            if (lastChapter in 1..chapterCount) {
-                chapterSpinner?.setSelection(lastChapter - 1)
-                viewModel.selectChapter(lastChapter)
-            } else if (lastChapter > chapterCount && chapterCount > 0) {
-                // If saved chapter is out of bounds, use the last available chapter
-                chapterSpinner?.setSelection(chapterCount - 1)
-                viewModel.selectChapter(chapterCount)
-                // Update the saved chapter
-                settingsManager.lastChapter = chapterCount
+            when {
+                lastChapter in 1..chapterCount -> chapterSpinner?.setSelection(lastChapter - 1).also { viewModel.selectChapter(lastChapter) }
+                lastChapter > chapterCount && chapterCount > 0 -> {
+                    chapterSpinner?.setSelection(chapterCount - 1)
+                    viewModel.selectChapter(chapterCount)
+                    settingsManager.lastChapter = chapterCount
+                }
             }
         }
     }
 
-    fun onPrevChapter() {
-        addFlipAnimation(true)
-        viewModel.prevChapter()
-    }
-
-    fun onNextChapter() {
-        addFlipAnimation(false)
-        viewModel.nextChapter()
-    }
+    fun onPrevChapter() = addFlipAnimation(true).also { viewModel.prevChapter() }
+    fun onNextChapter() = addFlipAnimation(false).also { viewModel.nextChapter() }
 
     private fun addFlipAnimation(isReverse: Boolean) {
-        // Calculate the translation distance (screen width)
         val screenWidth = binding.rvContent.width.toFloat()
-
-        // First, move the view off-screen
         binding.rvContent.alpha = 1f
         binding.rvContent.translationX = if (isReverse) -screenWidth else screenWidth
-
-        // Then animate it back to the center
-        binding.rvContent.animate()
-            .translationX(0f)
-            .alpha(1f)
-            .setDuration(250)
-            .start()
+        binding.rvContent.animate().translationX(0f).alpha(1f).setDuration(250).start()
     }
-    fun onSearch(keyword: String) {
-        searchResultAdapter.setSearchKeyword(keyword)
-        viewModel.search(keyword)
-    }
-
-    fun exitSearchMode(): Boolean {
-        return if (viewModel.isSearchMode.value == true) {
-            viewModel.exitSearchMode()
-            true
-        } else {
-            false
-        }
-    }
-    
-    fun exitBookmarkMode(): Boolean {
-        return if (viewModel.isBookmarkMode.value == true) {
-            viewModel.exitBookmarkMode()
-            true
-        } else {
-            false
-        }
-    }
-    
-    fun loadBookmarks() {
-        viewModel.loadBookmarks()
-    }
-    
+    fun onSearch(keyword: String) = searchResultAdapter.setSearchKeyword(keyword).also { viewModel.search(keyword) }
+    fun exitSearchMode(): Boolean = viewModel.isSearchMode.value == true && viewModel.exitSearchMode().let { true }
+    fun exitBookmarkMode(): Boolean = viewModel.isBookmarkMode.value == true && viewModel.exitBookmarkMode().let { true }
+    fun loadBookmarks() = viewModel.loadBookmarks()
     fun navigateToVerse(book: String, chapter: Int, verse: Int) {
         settingsManager.lastBookCode = book
         settingsManager.lastChapter = chapter
@@ -438,15 +298,11 @@ class MainFragment : Fragment() {
 
     fun applySettings(languageMode: Int, fontSize: Int, fontColorIndex: Int, backgroundColorIndex: Int) {
         viewModel.setLanguageMode(languageMode)
-
         currentFontSize = 12f + fontSize * 2f
-
         val fontColors = arrayOf(R.color.white, R.color.black, R.color.green, R.color.yellow, R.color.orange)
         currentFontColor = getColorFromResource(fontColors.getOrElse(fontColorIndex) { R.color.black })
-
         val backgroundColors = arrayOf(R.color.white, R.color.black, R.color.parchment, R.color.dark_gray)
         currentBackgroundColor = getColorFromResource(backgroundColors.getOrElse(backgroundColorIndex) { R.color.white })
-
         applyTextSettings()
         applyFontSizeToSpinners()
         (activity as? MainActivity)?.applyFontSizeToMenus(currentFontSize)
@@ -460,138 +316,68 @@ class MainFragment : Fragment() {
     }
     
     private fun applyFontSizeToSpinners() {
-        // Force refresh spinners with new font size
         viewModel.books.value?.let { books -> setupBookSpinner(books) }
         viewModel.currentBook.value?.let { book -> setupChapterSpinner(book) }
     }
 
-    private fun getBookPosition(book: Book): Int {
-        return viewModel.books.value?.indexOf(book) ?: 0
-    }
+    private fun getBookPosition(book: Book): Int = viewModel.books.value?.indexOf(book) ?: 0
 
     @SuppressLint("SetTextI18n")
     private fun showBookmarkDialog(verse: Verse, selectedText: String) {
         val dialogView = LayoutInflater.from(requireContext()).inflate(R.layout.dialog_bookmark, null)
         val isEnglish = settingsManager.languageMode == 1
-        
         val tvSelectedText = dialogView.findViewById<android.widget.TextView>(R.id.tvSelectedText)
         val etNotes = dialogView.findViewById<android.widget.EditText>(R.id.etNotes)
-        //val btnCopy = dialogView.findViewById<android.widget.Button>(R.id.btnCopy)
         val btnCancel = dialogView.findViewById<android.widget.Button>(R.id.btnCancel)
         val btnSave = dialogView.findViewById<android.widget.Button>(R.id.btnSave)
-        
-        // Set bilingual text
         etNotes.hint = if (isEnglish) "Add your notes here..." else "在此新增備註..."
-       // btnCopy.text = getString(if (isEnglish) R.string.copy_en else R.string.copy)
         btnCancel.text = getString(if (isEnglish) R.string.cancel_en else R.string.cancel)
         btnSave.text = getString(if (isEnglish) R.string.save_en else R.string.save)
-        
-        // Get book name based on language
         val bookName = viewModel.books.value?.find { it.code == verse.book }?.let { book ->
             when (settingsManager.languageMode) {
                 1 -> book.engName ?: book.tcName ?: book.code
                 else -> book.tcName ?: book.engName ?: book.code
             }
         } ?: verse.book
-        
         tvSelectedText.text = "$bookName ${verse.chapter}:${verse.verse} - $selectedText"
-        
-        val dialog = android.app.AlertDialog.Builder(requireContext())
-            .setTitle(getString(if (isEnglish) R.string.add_bookmark_en else R.string.add_bookmark))
-            .setView(dialogView)
-            .create()
-        
-//        btnCopy.setOnClickListener {
-//            val clipboard = requireContext().getSystemService(android.content.Context.CLIPBOARD_SERVICE) as android.content.ClipboardManager
-//            val clip = android.content.ClipData.newPlainText("Bible Verse", tvSelectedText.text)
-//            clipboard.setPrimaryClip(clip)
-//            val message = getString(if (isEnglish) R.string.copied_to_clipboard_en else R.string.copied_to_clipboard)
-//            android.widget.Toast.makeText(requireContext(), message, android.widget.Toast.LENGTH_SHORT).show()
-//        }
-        
-        btnCancel.setOnClickListener {
-            dialog.dismiss()
-        }
-        
+        val dialog = android.app.AlertDialog.Builder(requireContext()).setTitle(getString(if (isEnglish) R.string.add_bookmark_en else R.string.add_bookmark)).setView(dialogView).create()
+        btnCancel.setOnClickListener { dialog.dismiss() }
         btnSave.setOnClickListener {
-            val notes = etNotes.text.toString()
-            viewModel.addBookmark(verse.book, verse.chapter, verse.verse, selectedText, notes)
+            viewModel.addBookmark(verse.book, verse.chapter, verse.verse, selectedText, etNotes.text.toString())
             dialog.dismiss()
         }
-        
         dialog.show()
     }
     
     private fun showBookmarkOptionsDialog(bookmark: Bookmark) {
         val isEnglish = settingsManager.languageMode == 1
-        val options = if (isEnglish) arrayOf(
-            getString(R.string.view_notes_en),
-            getString(R.string.edit_notes_en),
-            getString(R.string.delete_bookmark_en)
-        ) else arrayOf(
-            getString(R.string.view_notes),
-            getString(R.string.edit_notes),
-            getString(R.string.delete_bookmark)
-        )
-        
-        android.app.AlertDialog.Builder(requireContext())
-            .setTitle(getString(if (isEnglish) R.string.bookmark_operations_en else R.string.bookmark_operations))
-            .setItems(options) { _, which ->
-                when (which) {
-                    0 -> viewNoteDialog(bookmark)
-                    1 -> showEditNoteDialog(bookmark)
-                    2 -> confirmDeleteBookmark(bookmark)
-                }
+        val options = if (isEnglish) arrayOf(getString(R.string.view_notes_en), getString(R.string.edit_notes_en), getString(R.string.delete_bookmark_en)) else arrayOf(getString(R.string.view_notes), getString(R.string.edit_notes), getString(R.string.delete_bookmark))
+        android.app.AlertDialog.Builder(requireContext()).setTitle(getString(if (isEnglish) R.string.bookmark_operations_en else R.string.bookmark_operations)).setItems(options) { _, which ->
+            when (which) {
+                0 -> viewNoteDialog(bookmark)
+                1 -> showEditNoteDialog(bookmark)
+                2 -> confirmDeleteBookmark(bookmark)
             }
-            .show()
+        }.show()
     }
     
     private fun showEditNoteDialog(bookmark: Bookmark) {
-        val context = requireContext()
-        val editText = android.widget.EditText(context)
-        editText.setText(bookmark.notes ?: "")
-        editText.setSelection(editText.text.length)
-
-        val dialog = android.app.AlertDialog.Builder(context)
-            .setTitle("\uD83D\uDCDD")
-            .setView(editText)
-            .setNegativeButton(getString(R.string.cancel_en), null)
-            .setPositiveButton(getString(R.string.ok_en)) { _, _ ->
-                val newNote = editText.text.toString()
-                if (newNote != bookmark.notes) {
-                    val updated = bookmark.copy(notes = newNote)
-                    viewModel.updateBookmark(updated)
-                }
-            }
-            .create()
-        dialog.show()
+        val editText = android.widget.EditText(requireContext()).apply { setText(bookmark.notes ?: ""); setSelection(text.length) }
+        android.app.AlertDialog.Builder(requireContext()).setTitle("\uD83D\uDCDD").setView(editText).setNegativeButton(getString(R.string.cancel_en), null).setPositiveButton(getString(R.string.ok_en)) { _, _ ->
+            editText.text.toString().takeIf { it != bookmark.notes }?.let { viewModel.updateBookmark(bookmark.copy(notes = it)) }
+        }.create().show()
     }
 
     private fun confirmDeleteBookmark(bookmark: Bookmark) {
         val isEnglish = settingsManager.languageMode == 1
-        val title = if (isEnglish) "Delete Bookmark" else "删除書籤"
-        val message = if (isEnglish) "Are you sure to delete this bookmark?" else "确定要删除該書籤嗎？"
-        val cancelText = if (isEnglish) "Cancel" else "取消"
-        val deleteText = if (isEnglish) "Delete" else "删除"
-        val toastMessage = if (isEnglish) "Bookmark deleted" else "書籤已删除"
-
-        android.app.AlertDialog.Builder(requireContext())
-            .setTitle(title)
-            .setMessage(message)
-            .setNegativeButton(cancelText, null)
-            .setPositiveButton(deleteText) { _, _ ->
-                viewModel.deleteBookmark(bookmark)
-                android.widget.Toast.makeText(requireContext(), toastMessage, android.widget.Toast.LENGTH_SHORT).show()
-            }
-            .show()
+        android.app.AlertDialog.Builder(requireContext()).setTitle(if (isEnglish) "Delete Bookmark" else "删除書籤").setMessage(if (isEnglish) "Are you sure to delete this bookmark?" else "确定要删除該書籤嗎？").setNegativeButton(if (isEnglish) "Cancel" else "取消", null).setPositiveButton(if (isEnglish) "Delete" else "删除") { _, _ ->
+            viewModel.deleteBookmark(bookmark)
+            android.widget.Toast.makeText(requireContext(), if (isEnglish) "Bookmark deleted" else "書籤已删除", android.widget.Toast.LENGTH_SHORT).show()
+        }.show()
     }
 
     private fun viewNoteDialog(bookmark: Bookmark) {
-        android.app.AlertDialog.Builder(requireContext())
-            .setTitle("\uD83D\uDCD6")
-            .setMessage(bookmark.notes)
-            .setPositiveButton("關閉", null)
-            .show()
+        android.app.AlertDialog.Builder(requireContext()).setTitle("\uD83D\uDCD6").setMessage(bookmark.notes).setPositiveButton("關閉", null).show()
     }
 
     override fun onDestroyView() {

@@ -42,8 +42,6 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
 
     private val importLauncher = registerForActivityResult(ActivityResultContracts.OpenDocument()) { uri ->
         uri?.let { importFromUri(it) }
-    }.apply {
-        // This ensures we can access files from any directory
     }
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -111,46 +109,27 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         }
     }
 
-    fun getCurrentMainFragment(): MainFragment? {
-        val navHostFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main)
-        return navHostFragment?.childFragmentManager?.fragments?.firstOrNull() as? MainFragment
-    }
+    fun getCurrentMainFragment(): MainFragment? =
+        (supportFragmentManager.findFragmentById(R.id.nav_host_fragment_content_main)?.childFragmentManager?.fragments?.firstOrNull() as? MainFragment)
 
     private fun showSearchDialog() {
         val dialogView = LayoutInflater.from(this).inflate(R.layout.dialog_search, null)
         val etSearchKeyword = dialogView.findViewById<EditText>(R.id.etSearchKeyword)
-
-        val dialog = AlertDialog.Builder(this)
-            .setView(dialogView)
-            .create()
-
-        dialogView.findViewById<android.view.View>(R.id.btnSearchCancel).setOnClickListener {
-            dialog.dismiss()
-        }
-
+        val dialog = AlertDialog.Builder(this).setView(dialogView).create()
+        dialogView.findViewById<android.view.View>(R.id.btnSearchCancel).setOnClickListener { dialog.dismiss() }
         dialogView.findViewById<android.view.View>(R.id.btnSearchOk).setOnClickListener {
-            val keyword = etSearchKeyword.text.toString()
-            if (keyword.isNotBlank()) {
-                getCurrentMainFragment()?.onSearch(keyword)
-            }
+            etSearchKeyword.text.toString().takeIf { it.isNotBlank() }?.let { getCurrentMainFragment()?.onSearch(it) }
             dialog.dismiss()
         }
-
         dialog.show()
     }
 
     private fun applyTheme() {
-        if (settingsManager.isDarkMode) {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_YES)
-        } else {
-            AppCompatDelegate.setDefaultNightMode(AppCompatDelegate.MODE_NIGHT_NO)
-        }
+        AppCompatDelegate.setDefaultNightMode(if (settingsManager.isDarkMode) AppCompatDelegate.MODE_NIGHT_YES else AppCompatDelegate.MODE_NIGHT_NO)
     }
 
     private fun applyToolbarTheme() {
-        if (settingsManager.isDarkMode) {
-            binding.toolbar.setBackgroundColor(0xFF424242.toInt())
-        }
+        if (settingsManager.isDarkMode) binding.toolbar.setBackgroundColor(0xFF424242.toInt())
     }
 
 
@@ -269,75 +248,39 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
         dialog.show()
     }
 
-    fun getToolbarSpinners(): Pair<Spinner?, Spinner?> {
-        val bookSpinner = binding.toolbar.findViewById<Spinner>(R.id.spinnerBooks)
-        val chapterSpinner = binding.toolbar.findViewById<Spinner>(R.id.spinnerChapters)
-        return Pair(bookSpinner, chapterSpinner)
-    }
+    fun getToolbarSpinners(): Pair<Spinner?, Spinner?> =
+        Pair(binding.toolbar.findViewById(R.id.spinnerBooks), binding.toolbar.findViewById(R.id.spinnerChapters))
 
     private fun showBookmarksFragment() {
-        // Instead of replacing with BookmarksFragment, use the MainFragment to display bookmarks
-        val mainFragment = getCurrentMainFragment()
-        if (mainFragment != null) {
-            mainFragment.loadBookmarks()
-        } else {
-            // Fallback to old behavior if MainFragment is not available
-            supportFragmentManager.beginTransaction()
-                .replace(R.id.nav_host_fragment_content_main, BookmarksFragment())
-                .addToBackStack(null)
-                .commit()
-        }
+        getCurrentMainFragment()?.loadBookmarks() ?: supportFragmentManager.beginTransaction().replace(R.id.nav_host_fragment_content_main, BookmarksFragment()).addToBackStack(null).commit()
     }
 
     private fun setupDrawerHeader() {
         val headerView = binding.navView.getHeaderView(0)
         val spinnerLanguage = headerView.findViewById<Spinner>(R.id.spinnerLanguage)
-
-        val languageOptions = when (settingsManager.languageMode) {
-            1 -> arrayOf("中文", "English", "TC&Eng") //arrayOf("Chinese", "English", "Chinese+English")
-            else -> arrayOf("中文", "English", "中英對照")
-        }
+        val languageOptions = if (settingsManager.languageMode == 1) arrayOf("中文", "English", "TC&Eng") else arrayOf("中文", "English", "中英對照")
         val adapter = ArrayAdapter(this, android.R.layout.simple_spinner_item, languageOptions)
         adapter.setDropDownViewResource(android.R.layout.simple_spinner_dropdown_item)
         spinnerLanguage.adapter = adapter
-
         spinnerLanguage.setSelection(settingsManager.languageMode)
-
         spinnerLanguage.onItemSelectedListener = object : android.widget.AdapterView.OnItemSelectedListener {
             override fun onItemSelected(parent: android.widget.AdapterView<*>?, view: android.view.View?, position: Int, id: Long) {
                 settingsManager.languageMode = position
                 updateMenuLanguage(position)
-                getCurrentMainFragment()?.applySettings(
-                    position,
-                    settingsManager.fontSize,
-                    settingsManager.fontColorIndex,
-                    settingsManager.backgroundColorIndex
-                )
+                getCurrentMainFragment()?.applySettings(position, settingsManager.fontSize, settingsManager.fontColorIndex, settingsManager.backgroundColorIndex)
             }
             override fun onNothingSelected(parent: android.widget.AdapterView<*>?) {}
         }
-        
-        // Set initial menu language
         updateMenuLanguage(settingsManager.languageMode)
     }
 
     override fun onNavigationItemSelected(item: MenuItem): Boolean {
         when (item.itemId) {
-            R.id.nav_search -> {
-                showSearchDialog()
-            }
-            R.id.nav_settings -> {
-                showSettingsDialog()
-            }
-            R.id.nav_bookmarks -> {
-                showBookmarksFragment()
-            }
-            R.id.nav_export_bookmarks -> {
-                exportBookmarks()
-            }
-            R.id.nav_import_bookmarks -> {
-                importBookmarks()
-            }
+            R.id.nav_search -> showSearchDialog()
+            R.id.nav_settings -> showSettingsDialog()
+            R.id.nav_bookmarks -> showBookmarksFragment()
+            R.id.nav_export_bookmarks -> exportBookmarks()
+            R.id.nav_import_bookmarks -> importBookmarks()
         }
         binding.drawerLayout.closeDrawer(GravityCompat.END)
         return true
@@ -354,22 +297,12 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun exportToUri(uri: Uri) {
         lifecycleScope.launch {
             try {
-                val mainFragment = getCurrentMainFragment()
-                if (mainFragment == null) {
-                    Toast.makeText(this@MainActivity, "Error: Main fragment not found", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-                
+                val mainFragment = getCurrentMainFragment() ?: run {
+                    Toast.makeText(this@MainActivity, "Error: Main fragment not found", Toast.LENGTH_SHORT).show(); return@launch }
                 val csvContent = mainFragment.viewModel.exportBookmarks()
                 if (csvContent.isBlank()) {
-                    Toast.makeText(this@MainActivity, "No bookmarks to export", Toast.LENGTH_SHORT).show()
-                    return@launch
-                }
-
-                contentResolver.openOutputStream(uri)?.use { outputStream ->
-                    outputStream.write(csvContent.toByteArray(Charsets.UTF_8))
-                    outputStream.flush()
-                }
+                    Toast.makeText(this@MainActivity, "No bookmarks to export", Toast.LENGTH_SHORT).show(); return@launch }
+                contentResolver.openOutputStream(uri)?.use { it.write(csvContent.toByteArray(Charsets.UTF_8)); it.flush() }
                 Toast.makeText(this@MainActivity, "Bookmarks exported successfully", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Log.e("MainActivity", "Export failed", e)
@@ -385,12 +318,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun importFromUri(uri: Uri) {
         lifecycleScope.launch {
             try {
-                val csvContent = contentResolver.openInputStream(uri)?.use { inputStream ->
-                    inputStream.bufferedReader().readText()
-                } ?: throw Exception("Could not read file")
-
-                val mainFragment = getCurrentMainFragment()
-                mainFragment?.viewModel?.importBookmarks(csvContent)
+                val csvContent = contentResolver.openInputStream(uri)?.use { it.bufferedReader().readText() } ?: throw Exception("Could not read file")
+                getCurrentMainFragment()?.viewModel?.importBookmarks(csvContent)
                 Toast.makeText(this@MainActivity, "Bookmarks imported successfully", Toast.LENGTH_LONG).show()
             } catch (e: Exception) {
                 Toast.makeText(this@MainActivity, "Import failed: ${e.message}", Toast.LENGTH_LONG).show()
@@ -401,8 +330,7 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
     private fun updateMenuLanguage(languageMode: Int) {
         binding.navView.post {
             val menu = binding.navView.menu
-            val isEnglish = languageMode == 1 // 0=Chinese, 1=English, 2=Both(Chinese menu)
-            
+            val isEnglish = languageMode == 1
             menu.findItem(R.id.nav_search)?.title = getString(if (isEnglish) R.string.search_en else R.string.search)
             menu.findItem(R.id.nav_bookmarks)?.title = getString(if (isEnglish) R.string.bookmarks_en else R.string.bookmarks)
             menu.findItem(R.id.nav_export_bookmarks)?.title = getString(if (isEnglish) R.string.export_bookmarks_en else R.string.export_bookmarks)
@@ -410,9 +338,8 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
             menu.findItem(R.id.nav_settings)?.title = getString(if (isEnglish) R.string.settings_en else R.string.settings)
         }
     }
-    
+
     fun applyFontSizeToMenus(fontSize: Float) {
-        // Apply font size to drawer menu
         binding.navView.post {
             val menuView = binding.navView.getChildAt(0) as? androidx.recyclerview.widget.RecyclerView
             menuView?.let { recyclerView ->
@@ -423,16 +350,9 @@ class MainActivity : AppCompatActivity(), NavigationView.OnNavigationItemSelecte
                 }
             }
         }
-        
-        // Apply font size to language spinner in drawer header
         val headerView = binding.navView.getHeaderView(0)
-        val spinnerLanguage = headerView.findViewById<android.widget.Spinner>(R.id.spinnerLanguage)
-        spinnerLanguage?.let { spinner ->
-            (spinner.selectedView as? android.widget.TextView)?.textSize = fontSize - 3f
-        }
+        val spinnerLanguage = headerView.findViewById<Spinner>(R.id.spinnerLanguage)
+        spinnerLanguage?.let { spinner -> (spinner.selectedView as? android.widget.TextView)?.textSize = fontSize - 3f }
     }
 
-    override fun onSupportNavigateUp(): Boolean {
-        return super.onSupportNavigateUp()
-    }
 }

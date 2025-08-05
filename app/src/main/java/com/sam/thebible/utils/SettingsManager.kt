@@ -127,35 +127,10 @@ class SettingsManager(private val context: Context) {
         }
 
         Log.d(TAG, "Saving current position: Book=$bookCode, Chapter=$chapter")
-
-        // Update SharedPreferences directly with commit() for immediate persistence
-        val editor = prefs.edit()
-        editor.putString("last_book", bookCode)
-        editor.putInt("last_chapter", chapter)
-        val success = editor.commit()
-
-        if (success) {
-            Log.d(TAG, "Position saved to SharedPreferences successfully")
-        } else {
-            Log.e(TAG, "Failed to save position to SharedPreferences")
-        }
-
-        // Now save to backup file
-        val properties = Properties()
-        properties.setProperty("last_book", bookCode)
-        properties.setProperty("last_chapter", chapter.toString())
-
-        try {
-            // Ensure the parent directory exists
-            backupFile.parentFile?.mkdirs()
-
-            FileOutputStream(backupFile).use { output ->
-                properties.store(output, "Bible Position Backup")
-                Log.d(TAG, "Position saved to file: Book=$bookCode, Chapter=$chapter")
-            }
-        } catch (e: IOException) {
-            Log.e(TAG, "Failed to save position to file", e)
-        }
+        
+        // Use property setters which handle both SharedPreferences and file backup
+        lastBookCode = bookCode
+        lastChapter = chapter
     }
 
 }
